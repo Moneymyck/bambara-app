@@ -75,7 +75,7 @@
   .envoi small { color: var(--doux); }
   .puce { font-size: 12px; padding: 4px 9px; border-radius: 20px; white-space: nowrap; flex: none; }
   .puce.termine { background: #173a28; color: var(--vert); }
-  .puce.en_cours, .puce.attente { background: #3a2a12; color: var(--ocre); }
+  .puce.en_cours, .puce.attente, .puce.a_relancer { background: #3a2a12; color: var(--ocre); }
   .puce.erreur { background: #3d1b17; color: var(--rouge); }
   .seg { border-top: 1px solid var(--ligne); padding: 12px 0; }
   .seg:first-child { border-top: 0; }
@@ -413,7 +413,7 @@ $("#envoyer").addEventListener("click", async () => {
 });
 
 /* ---------- HISTORIQUE ---------- */
-const libelles = { termine: "Terminé", en_cours: "En cours", attente: "En attente", erreur: "Erreur" };
+const libelles = { termine: "Terminé", en_cours: "En cours", attente: "En attente", erreur: "Erreur", a_relancer: "Relance auto" };
 function dateDe(id) {
   const m = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})/.exec(id);
   return m ? `${m[3]}/${m[2]}/${m[1]} à ${m[4]}h${m[5]}` : id;
@@ -549,9 +549,11 @@ async function rafraichirDetail(id) {
   try { st = await lireJSON(`sorties/${id}/statut.json`); }
   catch (e) { if (e.status !== 404) { corps.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; return; } }
 
-  if (!st || st.statut === "en_cours") {
+  if (!st || st.statut === "en_cours" || st.statut === "a_relancer") {
     const lien = `https://github.com/${cfg.owner}/${cfg.repo}/actions`;
-    const texte = !st ? "Le robot démarre…" : (etapes[st.etape] || "Traduction en cours…");
+    let texte = !st ? "Le robot démarre…" : (etapes[st.etape] || "Traduction en cours…");
+    if (st && st.statut === "a_relancer") texte = "🤖 L'agent a relancé cette traduction, le robot va la refaire…";
+    else if (st && st.tentative && st.tentative !== "normale") texte += `<br><small>🤖 Agent : nouvelle tentative (${esc(st.tentative)})</small>`;
     let segs = "";
     if (st && st.texte_pret) {
       try { segs = `<h2 style="margin-top:18px">Transcription</h2>${htmlSegments((await lireJSON(`sorties/${id}/resultat.json`)).segments || [], false)}`; } catch (e) {}
@@ -562,7 +564,12 @@ async function rafraichirDetail(id) {
     return;
   }
   if (st.statut === "erreur") {
+    const essais = (st.tentatives || []).map((t) => `<li>${esc(t.strategie)} : ${esc(t.erreur)}</li>`).join("");
+    const auto = !st.definitif && (st.relances_auto || 0) < 2;
     corps.innerHTML = `<div class="msg err">Erreur : ${esc(st.message || "inconnue")}</div>
+      ${st.diagnostic ? `<div class="msg info">🤖 ${esc(st.diagnostic)}</div>` : ""}
+      ${essais ? `<details style="margin-top:10px"><summary>Ce que l'agent a essayé</summary><ul class="aide">${essais}</ul></details>` : ""}
+      <p class="aide">${auto ? "L'agent de surveillance réessaiera tout seul (passage toutes les 6 h). Tu peux aussi relancer maintenant :" : "Cette erreur demande ton intervention (voir le message ci-dessus)."}</p>
       <button class="principal" id="d-relancer">Relancer la traduction</button><div id="d-rmsg"></div>`;
     $("#d-relancer").addEventListener("click", async (ev) => {
       ev.target.disabled = true;
@@ -577,6 +584,7 @@ async function rafraichirDetail(id) {
   const doutes = res.segments.filter((s) => s.doute && !s.corrige).length;
   corps.innerHTML = `
     <div class="msg ok">Terminé${st.secondes ? " en " + (st.secondes < 60 ? st.secondes + " s" : Math.round(st.secondes / 60) + " min") : ""}${doutes ? ` · ${doutes} passage(s) à vérifier` : ""}</div>
+    ${(st.agent || res.agent || []).length ? `<div class="msg info">🤖 Agent : ${(st.agent || res.agent).map(esc).join(" · ")}</div>` : ""}
     <div id="d-media"><div class="msg info">Chargement de l'audio…</div></div>
     <div class="liens" id="d-liens"></div>
     <h2 style="margin-top:18px">Transcription</h2>
