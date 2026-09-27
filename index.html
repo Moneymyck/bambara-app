@@ -84,6 +84,12 @@
   .seg .mm { color: var(--doux); font-size: 13px; }
   .seg .fr { font-size: 17px; margin-top: 4px; }
   .seg .dt { color: var(--rouge); font-size: 13px; margin-top: 4px; }
+  .seg .okc { color: var(--vert); font-size: 13px; margin-top: 4px; }
+  .seg .corriger { margin-top: 8px; }
+  .seg .form-c { margin-top: 10px; }
+  .seg .form-c label { margin-top: 8px; }
+  .seg .form-c .rangee { margin-top: 10px; }
+  .seg .form-c .rangee button { flex: 1; }
   audio, video { width: 100%; margin-top: 10px; border-radius: 10px; background: #000; }
   .liens { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
   .lex { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--ligne); }
@@ -182,6 +188,7 @@
     <input type="text" id="lx-note">
     <button class="principal" id="lx-ajouter">Ajouter au lexique</button>
     <p class="aide">Le lexique passe avant ce que le traducteur croit savoir.</p>
+    <p class="aide" id="lx-corpus"></p>
     <div id="lx-retour"></div>
   </div>
   <div class="carte">
@@ -336,10 +343,10 @@ let fichierChoisi = null;
 
 /* Réveille le robot dès qu'un fichier est choisi : il s'installe pendant que
    tu écris le contexte et que le fichier s'envoie (gain de 1 à 3 minutes). */
-async function reveiller() {
+async function reveiller(force) {
   if (!pret()) return;
   const dernier = lireLocal("bf_reveil", 0);
-  if (Date.now() - dernier < 3 * 60 * 1000) return;
+  if (!force && Date.now() - dernier < 3 * 60 * 1000) return;
   ecrireLocal("bf_reveil", Date.now());
   try {
     let sha;
@@ -456,14 +463,16 @@ function depuis(id) {
   const s = Math.max(0, Math.round((Date.now() - new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6])) / 1000));
   return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")}`;
 }
-function htmlSegments(segments) {
-  return segments.map((s) => `
+function htmlSegments(segments, corrigeable) {
+  return segments.map((s, i) => `
       <div class="seg">
         <div class="t">${esc(s.temps)}</div>
         <div class="bm">${esc(s.bambara)}</div>
-        ${s.mot_a_mot ? `<div class="mm">${esc(s.mot_a_mot)}</div>` : ""}
+        ${s.mot_a_mot && !s.corrige ? `<div class="mm">${esc(s.mot_a_mot)}</div>` : ""}
         <div class="fr">${esc(s.francais) || "<i>(rien d'audible)</i>"}</div>
-        ${s.doute ? `<div class="dt">À vérifier : ${esc(s.doute)}</div>` : ""}
+        ${s.doute && !s.corrige ? `<div class="dt">À vérifier : ${esc(s.doute)}</div>` : ""}
+        ${s.corrige ? `<div class="okc">✓ Corrigé par toi — resservira d'exemple</div>` : ""}
+        ${corrigeable ? `<button class="secondaire petit corriger" data-i="${i}">${s.corrige ? "Modifier" : "Corriger"}</button><div class="form-c" data-i="${i}" hidden></div>` : ""}
       </div>`).join("") || '<p class="vide">Pas de texte.</p>';
 }
 const etapes = {
@@ -472,6 +481,67 @@ const etapes = {
   voix: "Texte prêt ✓ — voix française en préparation…",
   montage: "Montage de l'audio et de la vidéo…",
 };
+
+/* ---------- CORRECTIONS (corpus perso) ---------- */
+async function ajouterAuCorpus(ligne, message) {
+  for (let essai = 0; essai < 3; essai++) {
+    let texte = "", sha;
+    try { const f = await lireFichier("corpus_perso.jsonl"); texte = f.texte; sha = f.sha; }
+    catch (e) { if (e.status !== 404) throw e; }
+    if (texte && !texte.endsWith("\n")) texte += "\n";
+    texte += JSON.stringify(ligne) + "\n";
+    try { await ecrireTexte("corpus_perso.jsonl", texte, message, sha); return; }
+    catch (e) { if (![409, 422].includes(e.status) || essai === 2) throw e; }
+  }
+}
+async function enregistrerCorrection(id, i, bm, fr) {
+  await ajouterAuCorpus({ bm, fr, source: id, date: new Date().toISOString() }, "Correction " + id);
+  const f = await lireFichier(`sorties/${id}/resultat.json`);
+  const res = JSON.parse(f.texte);
+  res.segments[i] = Object.assign({}, res.segments[i], { bambara: bm, francais: fr, corrige: true });
+  await ecrireTexte(`sorties/${id}/resultat.json`, JSON.stringify(res, null, 1), "Correction " + id, f.sha);
+  return res;
+}
+function brancherCorrections(id, res) {
+  document.querySelectorAll("#d-segs .corriger").forEach((b) => b.addEventListener("click", () => {
+    const i = Number(b.dataset.i), s = res.segments[i];
+    const form = document.querySelector(`#d-segs .form-c[data-i="${i}"]`);
+    if (!form.hidden) { form.hidden = true; return; }
+    form.hidden = false;
+    form.innerHTML = `
+      <label>Ce qui est dit en bambara (corrige si le robot a mal entendu)</label>
+      <textarea class="c-bm">${esc(s.bambara)}</textarea>
+      <label>La bonne traduction en français</label>
+      <textarea class="c-fr">${esc(s.francais)}</textarea>
+      <div class="rangee"><button class="secondaire petit c-annuler">Annuler</button><button class="principal petit c-ok" style="margin-top:0">Enregistrer</button></div>
+      <div class="c-msg"></div>`;
+    form.querySelector(".c-annuler").addEventListener("click", () => { form.hidden = true; });
+    form.querySelector(".c-ok").addEventListener("click", async (ev) => {
+      const bm = form.querySelector(".c-bm").value.trim(), fr = form.querySelector(".c-fr").value.trim();
+      const msg = form.querySelector(".c-msg");
+      if (!bm || !fr) { msg.innerHTML = '<div class="msg err">Remplis les deux cases.</div>'; return; }
+      ev.target.disabled = true;
+      msg.innerHTML = '<div class="msg info">Enregistrement…</div>';
+      try {
+        const nouveau = await enregistrerCorrection(id, i, bm, fr);
+        res.segments = nouveau.segments;
+        $("#d-segs").innerHTML = htmlSegments(res.segments, true);
+        brancherCorrections(id, res);
+      } catch (e) {
+        ev.target.disabled = false;
+        msg.innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+      }
+    });
+  }));
+}
+
+/* ---------- RELANCER un envoi en erreur ---------- */
+async function relancer(id) {
+  const d = await (await gh(contenu(`sorties/${id}/statut.json`))).json();
+  await gh(contenu(`sorties/${id}/statut.json`), { method: "DELETE", body: JSON.stringify({ message: "Relancer " + id, sha: d.sha }) });
+  await reveiller(true);
+}
+
 async function rafraichirDetail(id) {
   const corps = $("#d-corps");
   if (!corps || !$("#v-detail").classList.contains("active")) return;
@@ -484,7 +554,7 @@ async function rafraichirDetail(id) {
     const texte = !st ? "Le robot démarre…" : (etapes[st.etape] || "Traduction en cours…");
     let segs = "";
     if (st && st.texte_pret) {
-      try { segs = `<h2 style="margin-top:18px">Transcription</h2>${htmlSegments((await lireJSON(`sorties/${id}/resultat.json`)).segments || [])}`; } catch (e) {}
+      try { segs = `<h2 style="margin-top:18px">Transcription</h2>${htmlSegments((await lireJSON(`sorties/${id}/resultat.json`)).segments || [], false)}`; } catch (e) {}
     }
     corps.innerHTML = `<div class="msg info">${texte}<br><small>Depuis ${depuis(id)} · mise à jour automatique</small></div>
       <p class="aide"><a href="${lien}" target="_blank" rel="noopener">Voir le robot sur GitHub</a></p>${segs}`;
@@ -492,19 +562,27 @@ async function rafraichirDetail(id) {
     return;
   }
   if (st.statut === "erreur") {
-    corps.innerHTML = `<div class="msg err">Erreur : ${esc(st.message || "inconnue")}</div>`;
+    corps.innerHTML = `<div class="msg err">Erreur : ${esc(st.message || "inconnue")}</div>
+      <button class="principal" id="d-relancer">Relancer la traduction</button><div id="d-rmsg"></div>`;
+    $("#d-relancer").addEventListener("click", async (ev) => {
+      ev.target.disabled = true;
+      try { await relancer(id); message("#d-rmsg", "Relancé ✓ Le robot redémarre…", "ok"); setTimeout(() => rafraichirDetail(id), 3000); }
+      catch (e) { ev.target.disabled = false; message("#d-rmsg", esc(e.message), "err"); }
+    });
     return;
   }
 
   let res = { segments: [], fichiers: st.fichiers || [], video: st.video };
   try { res = await lireJSON(`sorties/${id}/resultat.json`); } catch (e) {}
-  const doutes = res.segments.filter((s) => s.doute).length;
+  const doutes = res.segments.filter((s) => s.doute && !s.corrige).length;
   corps.innerHTML = `
     <div class="msg ok">Terminé${st.secondes ? " en " + (st.secondes < 60 ? st.secondes + " s" : Math.round(st.secondes / 60) + " min") : ""}${doutes ? ` · ${doutes} passage(s) à vérifier` : ""}</div>
     <div id="d-media"><div class="msg info">Chargement de l'audio…</div></div>
     <div class="liens" id="d-liens"></div>
     <h2 style="margin-top:18px">Transcription</h2>
-    <div id="d-segs">${htmlSegments(res.segments)}</div>`;
+    <p class="aide">Touche « Corriger » sur une phrase mal traduite : ta version servira d'exemple pour toutes les prochaines traductions.</p>
+    <div id="d-segs">${htmlSegments(res.segments, true)}</div>`;
+  brancherCorrections(id, res);
 
   const media = $("#d-media");
   try {
@@ -547,6 +625,10 @@ async function chargerLexique() {
     else { $("#lx-liste").innerHTML = `<div class="msg err">${esc(e.message)}</div>`; return; }
   }
   afficherLexique();
+  try {
+    const n = (await lireFichier("corpus_perso.jsonl")).texte.split("\n").filter((l) => l.trim()).length;
+    $("#lx-corpus").textContent = `Tes phrases corrigées : ${n} (elles servent d'exemples au traducteur).`;
+  } catch (e) { $("#lx-corpus").textContent = "Tes phrases corrigées : 0 — utilise « Corriger » dans l'historique."; }
 }
 function afficherLexique() {
   const q = $("#lx-cherche").value.trim().toLowerCase();
