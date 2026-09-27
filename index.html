@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bambara FR">
+<meta name="theme-color" content="#14110f">
+<title>Bambara FR</title>
+<style>
+  :root {
+    --fond: #14110f;
+    --carte: #1f1a17;
+    --carte2: #2a231f;
+    --ligne: #3a302a;
+    --texte: #f3ece4;
+    --doux: #b3a597;
+    --ocre: #e0a13a;
+    --ocre-sombre: #7a5519;
+    --vert: #5cc48a;
+    --rouge: #e56b5d;
+    --rayon: 14px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--fond); color: var(--texte);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { padding: env(safe-area-inset-top) 16px calc(90px + env(safe-area-inset-bottom)); }
+  header { padding: 18px 0 8px; }
+  header h1 { margin: 0; font-size: 24px; letter-spacing: -0.3px; }
+  header h1 span { color: var(--ocre); }
+  header p { margin: 2px 0 0; color: var(--doux); font-size: 14px; }
+  .vue { display: none; }
+  .vue.active { display: block; }
+  .carte { background: var(--carte); border: 1px solid var(--ligne); border-radius: var(--rayon);
+    padding: 16px; margin: 14px 0; }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  label { display: block; font-size: 14px; color: var(--doux); margin: 12px 0 6px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; background: var(--carte2); color: var(--texte); border: 1px solid var(--ligne);
+    border-radius: 10px; padding: 12px; font: inherit; font-size: 16px; }
+  textarea { min-height: 70px; resize: vertical; }
+  .depot { display: block; border: 2px dashed var(--ocre-sombre); border-radius: var(--rayon);
+    padding: 26px 14px; text-align: center; cursor: pointer; background: var(--carte2); }
+  .depot strong { display: block; font-size: 17px; color: var(--ocre); }
+  .depot small { color: var(--doux); }
+  .depot input { display: none; }
+  .choix { display: flex; gap: 8px; flex-wrap: wrap; }
+  .choix label { margin: 0; flex: 1 1 0; min-width: 120px; }
+  .choix input { display: none; }
+  .choix span { display: block; text-align: center; padding: 10px; border-radius: 10px;
+    border: 1px solid var(--ligne); background: var(--carte2); color: var(--texte); font-size: 15px; }
+  .choix input:checked + span { border-color: var(--ocre); background: #3a2a12; color: var(--ocre); }
+  .rangee { display: flex; align-items: center; gap: 10px; }
+  .rangee input[type=range] { flex: 1; accent-color: var(--ocre); }
+  .case { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; color: var(--texte); }
+  .case input { width: 22px; height: 22px; accent-color: var(--ocre); flex: none; }
+  details summary { cursor: pointer; color: var(--ocre); font-weight: 600; padding: 4px 0; }
+  button { font: inherit; border: 0; border-radius: 12px; padding: 14px 16px; cursor: pointer; }
+  .principal { width: 100%; background: var(--ocre); color: #1b1305; font-weight: 700; font-size: 17px; margin-top: 16px; }
+  .principal:disabled { opacity: .5; }
+  .secondaire { background: var(--carte2); color: var(--texte); border: 1px solid var(--ligne); }
+  .petit { padding: 8px 12px; font-size: 14px; border-radius: 9px; }
+  .barre { height: 8px; background: var(--carte2); border-radius: 6px; overflow: hidden; margin-top: 12px; }
+  .barre div { height: 100%; width: 0; background: var(--ocre); transition: width .3s; }
+  .msg { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--carte2); font-size: 15px; }
+  .msg.ok { border-left: 4px solid var(--vert); }
+  .msg.err { border-left: 4px solid var(--rouge); }
+  .msg.info { border-left: 4px solid var(--ocre); }
+  .envoi { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 14px 0; border-bottom: 1px solid var(--ligne); cursor: pointer; }
+  .envoi:last-child { border-bottom: 0; }
+  .envoi b { display: block; font-weight: 600; word-break: break-word; }
+  .envoi small { color: var(--doux); }
+  .puce { font-size: 12px; padding: 4px 9px; border-radius: 20px; white-space: nowrap; flex: none; }
+  .puce.termine { background: #173a28; color: var(--vert); }
+  .puce.en_cours, .puce.attente { background: #3a2a12; color: var(--ocre); }
+  .puce.erreur { background: #3d1b17; color: var(--rouge); }
+  .seg { border-top: 1px solid var(--ligne); padding: 12px 0; }
+  .seg:first-child { border-top: 0; }
+  .seg .t { color: var(--ocre); font-size: 13px; font-weight: 600; }
+  .seg .bm { color: var(--doux); font-style: italic; margin: 4px 0; }
+  .seg .mm { color: var(--doux); font-size: 13px; }
+  .seg .fr { font-size: 17px; margin-top: 4px; }
+  .seg .dt { color: var(--rouge); font-size: 13px; margin-top: 4px; }
+  audio, video { width: 100%; margin-top: 10px; border-radius: 10px; background: #000; }
+  .liens { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .lex { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--ligne); }
+  .lex:last-child { border-bottom: 0; }
+  .lex b { color: var(--ocre); }
+  .lex small { display: block; color: var(--doux); }
+  .lex button { background: none; color: var(--rouge); padding: 4px 8px; flex: none; }
+  .aide { color: var(--doux); font-size: 14px; margin: 6px 0 0; }
+  a { color: var(--ocre); }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: rgba(20,17,15,.96);
+    border-top: 1px solid var(--ligne); padding-bottom: env(safe-area-inset-bottom);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  nav button { flex: 1; background: none; color: var(--doux); padding: 10px 4px 12px; border-radius: 0;
+    font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  nav button svg { width: 24px; height: 24px; }
+  nav button.active { color: var(--ocre); }
+  .vide { color: var(--doux); text-align: center; padding: 20px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Bambara <span>→</span> Français</h1>
+  <p>Vocaux WhatsApp et vidéos, traduits et doublés</p>
+</header>
+
+<!-- ============ TRADUIRE ============ -->
+<section class="vue active" id="v-traduire">
+  <div class="carte">
+    <label class="depot" id="depot">
+      <strong id="depot-titre">Choisir un vocal ou une vidéo</strong>
+      <small id="depot-info">Vocal WhatsApp, mp3, m4a, mp4, mov…</small>
+      <input type="file" id="fichier">
+    </label>
+
+    <label for="contexte">Contexte (conseillé)</label>
+    <textarea id="contexte" placeholder="Qui parle, d'où, de quoi… Ex : ma tante de Kayes parle du mariage"></textarea>
+
+    <label for="argot">Mots d'argot pour cet envoi (un par ligne : mot = sens)</label>
+    <textarea id="argot" placeholder="ex : wari = argent"></textarea>
+
+    <details style="margin-top:14px">
+      <summary>Réglages</summary>
+      <label>Voix française</label>
+      <div class="choix">
+        <label><input type="radio" name="voix" value="homme" checked><span>Homme</span></label>
+        <label><input type="radio" name="voix" value="femme"><span>Femme</span></label>
+      </div>
+      <label>Traduction lue</label>
+      <div class="choix">
+        <label><input type="radio" name="mode" value="naturel" checked><span>Français naturel</span></label>
+        <label><input type="radio" name="mode" value="litteral"><span>Littéral</span></label>
+      </div>
+      <label>Voix d'origine en fond : <b id="fond-val">10 %</b></label>
+      <div class="rangee"><input type="range" id="fond" min="0" max="50" step="5" value="10"></div>
+      <label>Modèle d'écoute</label>
+      <div class="choix">
+        <label><input type="radio" name="modele" value="soloni" checked><span>Rapide (conseillé)</span></label>
+        <label><input type="radio" name="modele" value="soloba"><span>Gros modèle</span></label>
+      </div>
+      <label class="case"><input type="checkbox" id="double"><span>Double vérification (2ᵉ modèle, plus lent, parfois plus juste)</span></label>
+    </details>
+
+    <button class="principal" id="envoyer">Traduire</button>
+    <div class="barre" id="barre" hidden><div></div></div>
+    <div id="retour"></div>
+  </div>
+</section>
+
+<!-- ============ HISTORIQUE ============ -->
+<section class="vue" id="v-historique">
+  <div class="carte">
+    <div class="rangee" style="justify-content:space-between">
+      <h2 style="margin:0">Mes traductions</h2>
+      <button class="secondaire petit" id="rafraichir">Actualiser</button>
+    </div>
+    <div id="liste"><p class="vide">Chargement…</p></div>
+  </div>
+</section>
+
+<!-- ============ DETAIL ============ -->
+<section class="vue" id="v-detail">
+  <button class="secondaire petit" id="retour-liste" style="margin-top:10px">← Retour</button>
+  <div class="carte" id="detail"></div>
+</section>
+
+<!-- ============ LEXIQUE ============ -->
+<section class="vue" id="v-lexique">
+  <div class="carte">
+    <h2>Ajouter un mot</h2>
+    <label for="lx-mot">Mot (bambara, argot, dialecte)</label>
+    <input type="text" id="lx-mot" autocapitalize="off" autocomplete="off">
+    <label for="lx-sens">Sens en français</label>
+    <input type="text" id="lx-sens">
+    <label for="lx-note">Note (optionnel : région, exemple…)</label>
+    <input type="text" id="lx-note">
+    <button class="principal" id="lx-ajouter">Ajouter au lexique</button>
+    <p class="aide">Le lexique passe avant ce que le traducteur croit savoir.</p>
+    <div id="lx-retour"></div>
+  </div>
+  <div class="carte">
+    <input type="text" id="lx-cherche" placeholder="Chercher un mot…" autocapitalize="off">
+    <div id="lx-liste"><p class="vide">Chargement…</p></div>
+  </div>
+</section>
+
+<!-- ============ REGLAGES ============ -->
+<section class="vue" id="v-reglages">
+  <div class="carte">
+    <h2>Connexion à GitHub</h2>
+    <label for="c-token">Jeton GitHub (fine-grained)</label>
+    <input type="password" id="c-token" autocomplete="off" placeholder="github_pat_…">
+    <label for="c-owner">Ton nom GitHub</label>
+    <input type="text" id="c-owner" autocapitalize="off" autocomplete="off">
+    <label for="c-repo">Dépôt du moteur</label>
+    <input type="text" id="c-repo" autocapitalize="off" autocomplete="off" value="bambara-fr">
+    <button class="principal" id="c-sauver">Enregistrer et tester</button>
+    <div id="c-retour"></div>
+    <p class="aide">Le jeton reste uniquement sur ce téléphone.</p>
+    <p class="aide"><a id="lien-robot" href="#" target="_blank" rel="noopener">Voir le robot au travail sur GitHub</a></p>
+  </div>
+</section>
+
+<nav>
+  <button data-vue="traduire" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+    Traduire</button>
+  <button data-vue="historique">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    Historique</button>
+  <button data-vue="lexique">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/><path d="M9 8h6M9 12h4"/></svg>
+    Lexique</button>
+  <button data-vue="reglages">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    Réglages</button>
+</nav>
+
+<script>
+"use strict";
+const API = "https://api.github.com";
+const TAILLE_MAX = 70 * 1024 * 1024;
+const $ = (s) => document.querySelector(s);
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- stockage local (peut être indisponible) ---------- */
+function lireLocal(cle, defaut) {
+  try { const v = localStorage.getItem(cle); return v ? JSON.parse(v) : defaut; } catch (e) { return defaut; }
+}
+function ecrireLocal(cle, val) {
+  try { localStorage.setItem(cle, JSON.stringify(val)); } catch (e) {}
+}
+const ownerDefaut = location.hostname.endsWith(".github.io") ? location.hostname.split(".")[0] : "";
+let cfg = Object.assign({ token: "", owner: ownerDefaut, repo: "bambara-fr" }, lireLocal("bf_cfg", {}));
+const pret = () => cfg.token && cfg.owner && cfg.repo;
+
+/* ---------- navigation ---------- */
+function montrer(vue) {
+  document.querySelectorAll(".vue").forEach((v) => v.classList.toggle("active", v.id === "v-" + vue));
+  document.querySelectorAll("nav button").forEach((b) =>
+    b.classList.toggle("active", b.dataset.vue === vue || (vue === "detail" && b.dataset.vue === "historique")));
+  window.scrollTo(0, 0);
+  if (vue === "historique") chargerHistorique();
+  if (vue === "lexique") chargerLexique();
+}
+document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => {
+  if (!pret() && b.dataset.vue !== "reglages") { montrer("reglages"); message("#c-retour", "Commence par remplir la connexion.", "info"); return; }
+  montrer(b.dataset.vue);
+}));
+
+function message(cible, texte, type) {
+  $(cible).innerHTML = texte ? `<div class="msg ${type || "info"}">${texte}</div>` : "";
+}
+
+/* ---------- API GitHub ---------- */
+function entetes(extra) {
+  return Object.assign({
+    Authorization: "Bearer " + cfg.token,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  }, extra || {});
+}
+async function gh(chemin, options) {
+  const r = await fetch(API + chemin, Object.assign({ cache: "no-store" }, options, { headers: entetes(options && options.headers) }));
+  if (!r.ok) {
+    const err = new Error(r.status === 401 ? "Jeton GitHub invalide ou expiré." :
+      r.status === 403 ? "Accès refusé : vérifie les permissions du jeton." :
+      r.status === 404 ? "introuvable" : "Erreur GitHub " + r.status);
+    err.status = r.status;
+    throw err;
+  }
+  return r;
+}
+const contenu = (p) => `/repos/${cfg.owner}/${cfg.repo}/contents/${p}`;
+
+function b64VersTexte(b64) {
+  const bin = atob(b64.replace(/\s/g, ""));
+  return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+}
+function texteVersB64(t) {
+  const o = new TextEncoder().encode(t);
+  let s = "";
+  for (let i = 0; i < o.length; i += 0x8000) s += String.fromCharCode.apply(null, o.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+async function lireFichier(p) {
+  const d = await (await gh(contenu(p))).json();
+  if (d.content && d.encoding === "base64") return { texte: b64VersTexte(d.content), sha: d.sha };
+  const brut = await gh(contenu(p), { headers: { Accept: "application/vnd.github.raw" } });
+  return { texte: await brut.text(), sha: d.sha };
+}
+async function lireJSON(p) { return JSON.parse((await lireFichier(p)).texte); }
+async function lireBlob(p, type) {
+  const r = await gh(contenu(p), { headers: { Accept: "application/vnd.github.raw" } });
+  return new Blob([await r.arrayBuffer()], { type });
+}
+async function lister(p) {
+  try { return await (await gh(contenu(p))).json(); }
+  catch (e) { if (e.status === 404) return []; throw e; }
+}
+async function ecrireTexte(p, texte, msg, sha) {
+  const corps = { message: msg, content: texteVersB64(texte) };
+  if (sha) corps.sha = sha;
+  return (await gh(contenu(p), { method: "PUT", body: JSON.stringify(corps) })).json();
+}
+function envoyerBinaire(p, b64, msg, progression) {
+  return new Promise((ok, ko) => {
+    const x = new XMLHttpRequest();
+    x.open("PUT", API + contenu(p));
+    const h = entetes({ "Content-Type": "application/json" });
+    Object.keys(h).forEach((k) => x.setRequestHeader(k, h[k]));
+    x.upload.onprogress = (e) => { if (e.lengthComputable) progression(e.loaded / e.total); };
+    x.onload = () => (x.status >= 200 && x.status < 300) ? ok(JSON.parse(x.responseText)) :
+      ko(new Error(x.status === 422 ? "Fichier trop lourd pour GitHub." : "Envoi refusé (" + x.status + ")."));
+    x.onerror = () => ko(new Error("Connexion perdue pendant l'envoi."));
+    x.send(JSON.stringify({ message: msg, content: b64 }));
+  });
+}
+function fichierVersB64(f) {
+  return new Promise((ok, ko) => {
+    const r = new FileReader();
+    r.onload = () => ok(String(r.result).split(",")[1] || "");
+    r.onerror = () => ko(new Error("Impossible de lire le fichier."));
+    r.readAsDataURL(f);
+  });
+}
+
+/* ---------- TRADUIRE ---------- */
+let fichierChoisi = null;
+
+/* Réveille le robot dès qu'un fichier est choisi : il s'installe pendant que
+   tu écris le contexte et que le fichier s'envoie (gain de 1 à 3 minutes). */
+async function reveiller() {
+  if (!pret()) return;
+  const dernier = lireLocal("bf_reveil", 0);
+  if (Date.now() - dernier < 3 * 60 * 1000) return;
+  ecrireLocal("bf_reveil", Date.now());
+  try {
+    let sha;
+    try { sha = (await (await gh(contenu("reveil.json"))).json()).sha; } catch (e) {}
+    await ecrireTexte("reveil.json", JSON.stringify({ reveil: new Date().toISOString() }), "Reveil", sha);
+  } catch (e) { ecrireLocal("bf_reveil", 0); }
+}
+
+$("#fichier").addEventListener("change", (e) => {
+  fichierChoisi = e.target.files[0] || null;
+  if (fichierChoisi) {
+    $("#depot-titre").textContent = fichierChoisi.name;
+    $("#depot-info").textContent = (fichierChoisi.size / 1048576).toFixed(1) + " Mo — touche pour changer";
+    reveiller();
+  }
+});
+$("#fond").addEventListener("input", (e) => { $("#fond-val").textContent = e.target.value + " %"; });
+const valeur = (nom) => (document.querySelector(`input[name=${nom}]:checked`) || {}).value;
+
+function nouvelId() {
+  const d = new Date(), z = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}-${Math.random().toString(36).slice(2, 6)}`;
+}
+function nomPropre(nom) {
+  const point = nom.lastIndexOf(".");
+  const ext = point > 0 ? nom.slice(point).toLowerCase().replace(/[^.a-z0-9]/g, "") : "";
+  const base = (point > 0 ? nom.slice(0, point) : nom).normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^A-Za-z0-9_-]+/g, "_").slice(0, 40) || "fichier";
+  return base + ext;
+}
+
+$("#envoyer").addEventListener("click", async () => {
+  if (!pret()) { montrer("reglages"); return; }
+  if (!fichierChoisi) { message("#retour", "Choisis d'abord un vocal ou une vidéo.", "err"); return; }
+  if (fichierChoisi.size > TAILLE_MAX) { message("#retour", "Fichier trop lourd (70 Mo max). Coupe la vidéo ou baisse sa qualité.", "err"); return; }
+  const bouton = $("#envoyer"), barre = $("#barre");
+  bouton.disabled = true; barre.hidden = false; barre.firstElementChild.style.width = "0";
+  const id = nouvelId(), nom = nomPropre(fichierChoisi.name);
+  try {
+    message("#retour", "Préparation du fichier…", "info");
+    const b64 = await fichierVersB64(fichierChoisi);
+    message("#retour", "Envoi du fichier…", "info");
+    await envoyerBinaire(`entrees/${id}/${nom}`, b64, "Nouveau fichier " + id,
+      (p) => { barre.firstElementChild.style.width = Math.round(p * 95) + "%"; });
+    const job = {
+      fichier: nom, titre: fichierChoisi.name,
+      contexte: $("#contexte").value.trim(), lexique_extra: $("#argot").value.trim(),
+      voix: valeur("voix"), mode: valeur("mode"), modele: valeur("modele"),
+      fond: Number($("#fond").value), double: $("#double").checked,
+    };
+    await ecrireTexte(`entrees/${id}/job.json`, JSON.stringify(job, null, 1), "Traduire " + id);
+    barre.firstElementChild.style.width = "100%";
+    message("#retour", "Envoyé ✓ Je t'ouvre le suivi.", "ok");
+    fichierChoisi = null; $("#fichier").value = "";
+    $("#depot-titre").textContent = "Choisir un vocal ou une vidéo";
+    $("#depot-info").textContent = "Vocal WhatsApp, mp3, m4a, mp4, mov…";
+    $("#argot").value = "";
+    setTimeout(() => { ouvrirDetail(id, job.titre); message("#retour", ""); barre.hidden = true; }, 800);
+  } catch (e) {
+    message("#retour", esc(e.message), "err");
+  } finally {
+    bouton.disabled = false;
+  }
+});
+
+/* ---------- HISTORIQUE ---------- */
+const libelles = { termine: "Terminé", en_cours: "En cours", attente: "En attente", erreur: "Erreur" };
+function dateDe(id) {
+  const m = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})/.exec(id);
+  return m ? `${m[3]}/${m[2]}/${m[1]} à ${m[4]}h${m[5]}` : id;
+}
+async function chargerHistorique() {
+  const liste = $("#liste");
+  liste.innerHTML = '<p class="vide">Chargement…</p>';
+  try {
+    const [entrees, sorties] = await Promise.all([lister("entrees"), lister("sorties")]);
+    const ids = [...new Set([...entrees, ...sorties].filter((d) => d.type === "dir").map((d) => d.name))]
+      .sort().reverse().slice(0, 30);
+    if (!ids.length) { liste.innerHTML = '<p class="vide">Aucune traduction pour l\'instant.</p>'; return; }
+    const avecSortie = new Set(sorties.map((d) => d.name));
+    const infos = await Promise.all(ids.map(async (id) => {
+      let st = { statut: "attente" };
+      if (avecSortie.has(id)) { try { st = await lireJSON(`sorties/${id}/statut.json`); } catch (e) {} }
+      return { id, st };
+    }));
+    liste.innerHTML = infos.map(({ id, st }) => `
+      <div class="envoi" data-id="${esc(id)}" data-titre="${esc(st.titre || "")}">
+        <div><b>${esc(st.titre || "Envoi")}</b><small>${esc(dateDe(id))}</small></div>
+        <span class="puce ${esc(st.statut)}">${esc(libelles[st.statut] || st.statut)}</span>
+      </div>`).join("");
+    liste.querySelectorAll(".envoi").forEach((el) => el.addEventListener("click", () => ouvrirDetail(el.dataset.id, el.dataset.titre)));
+  } catch (e) {
+    liste.innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+  }
+}
+$("#rafraichir").addEventListener("click", chargerHistorique);
+$("#retour-liste").addEventListener("click", () => montrer("historique"));
+
+/* ---------- DETAIL ---------- */
+let minuteur = null, urlsBlob = [];
+function libererBlobs() { urlsBlob.forEach((u) => URL.revokeObjectURL(u)); urlsBlob = []; }
+async function ouvrirDetail(id, titre) {
+  clearTimeout(minuteur); libererBlobs();
+  document.querySelectorAll(".vue").forEach((v) => v.classList.toggle("active", v.id === "v-detail"));
+  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("active", b.dataset.vue === "historique"));
+  window.scrollTo(0, 0);
+  const zone = $("#detail");
+  zone.innerHTML = `<h2>${esc(titre || "Envoi")}</h2><p class="aide">${esc(dateDe(id))}</p><div id="d-corps"><div class="msg info">Chargement…</div></div>`;
+  await rafraichirDetail(id);
+}
+function depuis(id) {
+  const m = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})/.exec(id);
+  if (!m) return "";
+  const s = Math.max(0, Math.round((Date.now() - new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6])) / 1000));
+  return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")}`;
+}
+function htmlSegments(segments) {
+  return segments.map((s) => `
+      <div class="seg">
+        <div class="t">${esc(s.temps)}</div>
+        <div class="bm">${esc(s.bambara)}</div>
+        ${s.mot_a_mot ? `<div class="mm">${esc(s.mot_a_mot)}</div>` : ""}
+        <div class="fr">${esc(s.francais) || "<i>(rien d'audible)</i>"}</div>
+        ${s.doute ? `<div class="dt">À vérifier : ${esc(s.doute)}</div>` : ""}
+      </div>`).join("") || '<p class="vide">Pas de texte.</p>';
+}
+const etapes = {
+  ecoute: "Écoute du bambara…",
+  traduction: "Traduction en cours…",
+  voix: "Texte prêt ✓ — voix française en préparation…",
+  montage: "Montage de l'audio et de la vidéo…",
+};
+async function rafraichirDetail(id) {
+  const corps = $("#d-corps");
+  if (!corps || !$("#v-detail").classList.contains("active")) return;
+  let st = null;
+  try { st = await lireJSON(`sorties/${id}/statut.json`); }
+  catch (e) { if (e.status !== 404) { corps.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; return; } }
+
+  if (!st || st.statut === "en_cours") {
+    const lien = `https://github.com/${cfg.owner}/${cfg.repo}/actions`;
+    const texte = !st ? "Le robot démarre…" : (etapes[st.etape] || "Traduction en cours…");
+    let segs = "";
+    if (st && st.texte_pret) {
+      try { segs = `<h2 style="margin-top:18px">Transcription</h2>${htmlSegments((await lireJSON(`sorties/${id}/resultat.json`)).segments || [])}`; } catch (e) {}
+    }
+    corps.innerHTML = `<div class="msg info">${texte}<br><small>Depuis ${depuis(id)} · mise à jour automatique</small></div>
+      <p class="aide"><a href="${lien}" target="_blank" rel="noopener">Voir le robot sur GitHub</a></p>${segs}`;
+    minuteur = setTimeout(() => rafraichirDetail(id), 6000);
+    return;
+  }
+  if (st.statut === "erreur") {
+    corps.innerHTML = `<div class="msg err">Erreur : ${esc(st.message || "inconnue")}</div>`;
+    return;
+  }
+
+  let res = { segments: [], fichiers: st.fichiers || [], video: st.video };
+  try { res = await lireJSON(`sorties/${id}/resultat.json`); } catch (e) {}
+  const doutes = res.segments.filter((s) => s.doute).length;
+  corps.innerHTML = `
+    <div class="msg ok">Terminé${st.secondes ? " en " + (st.secondes < 60 ? st.secondes + " s" : Math.round(st.secondes / 60) + " min") : ""}${doutes ? ` · ${doutes} passage(s) à vérifier` : ""}</div>
+    <div id="d-media"><div class="msg info">Chargement de l'audio…</div></div>
+    <div class="liens" id="d-liens"></div>
+    <h2 style="margin-top:18px">Transcription</h2>
+    <div id="d-segs">${htmlSegments(res.segments)}</div>`;
+
+  const media = $("#d-media");
+  try {
+    let html = "";
+    if (res.video) {
+      const v = URL.createObjectURL(await lireBlob(`sorties/${id}/video_FR.mp4`, "video/mp4")); urlsBlob.push(v);
+      html += `<video controls playsinline src="${v}"></video>`;
+    }
+    const a = URL.createObjectURL(await lireBlob(`sorties/${id}/audio_FR.mp3`, "audio/mpeg")); urlsBlob.push(a);
+    html += `<audio controls src="${a}"></audio>`;
+    media.innerHTML = html;
+    const liens = [[a, "audio_FR.mp3", "Télécharger l'audio"]];
+    if (res.video) liens.unshift([urlsBlob[0], "video_FR.mp4", "Télécharger la vidéo"]);
+    for (const [nom, lib] of [["transcription.txt", "Transcription"], ["sous_titres_FR.srt", "Sous-titres"]]) {
+      try { const u = URL.createObjectURL(await lireBlob(`sorties/${id}/${nom}`, "text/plain")); urlsBlob.push(u); liens.push([u, nom, lib]); } catch (e) {}
+    }
+    $("#d-liens").innerHTML = liens.map(([u, n, l]) => `<a class="secondaire petit" style="text-decoration:none;display:inline-block;border-radius:9px;padding:8px 12px;background:var(--carte2);border:1px solid var(--ligne);color:var(--texte)" href="${u}" download="${esc(n)}">${esc(l)}</a>`).join("");
+  } catch (e) {
+    media.innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+  }
+}
+
+/* ---------- LEXIQUE ---------- */
+let lexique = [], lexiqueSha = null;
+function lireCSV(txt) {
+  const lignes = txt.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
+  return lignes.slice(1).map((l) => { const [mot = "", sens = "", note = ""] = l.split(";"); return { mot: mot.trim(), sens: sens.trim(), note: note.trim() }; })
+    .filter((e) => e.mot && e.sens);
+}
+const propre = (t) => String(t).replace(/[;\r\n]+/g, ", ").trim();
+function ecrireCSV(liste) {
+  return "mot;sens;note\n" + liste.map((e) => [e.mot, e.sens, e.note].map(propre).join(";")).join("\n") + "\n";
+}
+async function chargerLexique() {
+  try {
+    const f = await lireFichier("lexique_argot.csv");
+    lexique = lireCSV(f.texte); lexiqueSha = f.sha;
+  } catch (e) {
+    if (e.status === 404) { lexique = []; lexiqueSha = null; }
+    else { $("#lx-liste").innerHTML = `<div class="msg err">${esc(e.message)}</div>`; return; }
+  }
+  afficherLexique();
+}
+function afficherLexique() {
+  const q = $("#lx-cherche").value.trim().toLowerCase();
+  const visibles = lexique.map((e, i) => ({ e, i }))
+    .filter(({ e }) => !q || (e.mot + " " + e.sens).toLowerCase().includes(q))
+    .sort((a, b) => a.e.mot.localeCompare(b.e.mot, "fr"));
+  $("#lx-liste").innerHTML = visibles.length ? visibles.map(({ e, i }) => `
+    <div class="lex"><div><b>${esc(e.mot)}</b> — ${esc(e.sens)}${e.note ? `<small>${esc(e.note)}</small>` : ""}</div>
+    <button data-i="${i}" aria-label="Supprimer">✕</button></div>`).join("")
+    : `<p class="vide">${lexique.length} mot(s) — aucun ne correspond.</p>`;
+  $("#lx-liste").querySelectorAll("button").forEach((b) => b.addEventListener("click", async () => {
+    const e = lexique[Number(b.dataset.i)];
+    if (!confirm(`Supprimer « ${e.mot} » ?`)) return;
+    const copie = lexique.filter((_, i) => i !== Number(b.dataset.i));
+    await sauverLexique(copie, "Mot supprimé");
+  }));
+}
+async function sauverLexique(nouvelle, texteOk) {
+  try {
+    const r = await ecrireTexte("lexique_argot.csv", ecrireCSV(nouvelle), "Lexique mis à jour", lexiqueSha);
+    lexique = nouvelle; lexiqueSha = r.content.sha;
+    message("#lx-retour", texteOk, "ok"); afficherLexique();
+    return true;
+  } catch (e) {
+    message("#lx-retour", e.status === 409 ? "Le lexique a changé ailleurs : je recharge, réessaie." : esc(e.message), "err");
+    if (e.status === 409) chargerLexique();
+    return false;
+  }
+}
+$("#lx-cherche").addEventListener("input", afficherLexique);
+$("#lx-ajouter").addEventListener("click", async () => {
+  const mot = $("#lx-mot").value.trim(), sens = $("#lx-sens").value.trim(), note = $("#lx-note").value.trim();
+  if (!mot || !sens) { message("#lx-retour", "Il faut le mot et son sens.", "err"); return; }
+  const copie = lexique.filter((e) => e.mot.toLowerCase() !== mot.toLowerCase());
+  copie.push({ mot, sens, note });
+  if (await sauverLexique(copie, `« ${esc(mot)} » ajouté ✓`)) {
+    $("#lx-mot").value = ""; $("#lx-sens").value = ""; $("#lx-note").value = ""; $("#lx-mot").focus();
+  }
+});
+
+/* ---------- REGLAGES ---------- */
+function remplirReglages() {
+  $("#c-token").value = cfg.token; $("#c-owner").value = cfg.owner; $("#c-repo").value = cfg.repo;
+  $("#lien-robot").href = cfg.owner ? `https://github.com/${cfg.owner}/${cfg.repo}/actions` : "#";
+}
+$("#c-sauver").addEventListener("click", async () => {
+  cfg = { token: $("#c-token").value.trim(), owner: $("#c-owner").value.trim(), repo: $("#c-repo").value.trim() };
+  ecrireLocal("bf_cfg", cfg); remplirReglages();
+  if (!pret()) { message("#c-retour", "Remplis les trois champs.", "err"); return; }
+  try {
+    const d = await (await gh(`/repos/${cfg.owner}/${cfg.repo}`)).json();
+    message("#c-retour", `Connecté à <b>${esc(d.full_name)}</b> ${d.private ? "(privé ✓)" : "⚠️ ce dépôt est public : passe-le en privé"}`, d.private ? "ok" : "err");
+  } catch (e) {
+    message("#c-retour", e.status === 404 ? "Dépôt introuvable : vérifie le nom, et que le jeton a accès à ce dépôt." : esc(e.message), "err");
+  }
+});
+
+remplirReglages();
+if (!pret()) montrer("reglages");
+</script>
+</body>
+</html>
