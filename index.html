@@ -210,6 +210,7 @@
     <button class="principal" id="c-sauver">Enregistrer et tester</button>
     <div id="c-retour"></div>
     <p class="aide">Le jeton reste uniquement sur ce téléphone.</p>
+    <p class="aide">Version de l'app : 28/09 — B (envois en morceaux de 5 Mo)</p>
     <p class="aide"><a id="lien-robot" href="#" target="_blank" rel="noopener">Voir le robot au travail sur GitHub</a></p>
   </div>
 </section>
@@ -233,7 +234,7 @@
 "use strict";
 const API = "https://api.github.com";
 const TAILLE_MAX = 400 * 1024 * 1024;
-const TAILLE_PARTIE = 12 * 1024 * 1024;   // GitHub refuse les gros envois d'un coup : on découpe en morceaux
+const TAILLE_PARTIE = 5 * 1024 * 1024;    // GitHub refuse les gros envois d'un coup : on découpe en morceaux
 const $ = (s) => document.querySelector(s);
 const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -324,8 +325,12 @@ function envoyerBinaire(p, b64, msg, progression) {
     const h = entetes({ "Content-Type": "application/json" });
     Object.keys(h).forEach((k) => x.setRequestHeader(k, h[k]));
     x.upload.onprogress = (e) => { if (e.lengthComputable) progression(e.loaded / e.total); };
-    x.onload = () => (x.status >= 200 && x.status < 300) ? ok(JSON.parse(x.responseText)) :
-      ko(new Error(x.status === 422 ? "Fichier trop lourd pour GitHub." : "Envoi refusé (" + x.status + ")."));
+    x.onload = () => {
+      if (x.status >= 200 && x.status < 300) return ok(JSON.parse(x.responseText));
+      let detail = "";
+      try { detail = JSON.parse(x.responseText).message || ""; } catch (e) { detail = (x.responseText || "").slice(0, 120); }
+      ko(new Error("GitHub a refusé l'envoi (" + x.status + (detail ? " : " + detail : "") + ")."));
+    };
     x.onerror = () => ko(new Error("Connexion perdue pendant l'envoi."));
     x.send(JSON.stringify({ message: msg, content: b64 }));
   });
