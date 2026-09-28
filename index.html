@@ -232,7 +232,8 @@
 <script>
 "use strict";
 const API = "https://api.github.com";
-const TAILLE_MAX = 70 * 1024 * 1024;
+const TAILLE_MAX = 400 * 1024 * 1024;
+const TAILLE_PARTIE = 12 * 1024 * 1024;   // GitHub refuse les gros envois d'un coup : on découpe en morceaux
 const $ = (s) => document.querySelector(s);
 const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -381,18 +382,30 @@ function nomPropre(nom) {
 $("#envoyer").addEventListener("click", async () => {
   if (!pret()) { montrer("reglages"); return; }
   if (!fichierChoisi) { message("#retour", "Choisis d'abord un vocal ou une vidéo.", "err"); return; }
-  if (fichierChoisi.size > TAILLE_MAX) { message("#retour", "Fichier trop lourd (70 Mo max). Coupe la vidéo ou baisse sa qualité.", "err"); return; }
+  if (fichierChoisi.size > TAILLE_MAX) { message("#retour", "Fichier trop lourd (400 Mo max). Coupe la vidéo en deux.", "err"); return; }
   const bouton = $("#envoyer"), barre = $("#barre");
   bouton.disabled = true; barre.hidden = false; barre.firstElementChild.style.width = "0";
   const id = nouvelId(), nom = nomPropre(fichierChoisi.name);
   try {
-    message("#retour", "Préparation du fichier…", "info");
-    const b64 = await fichierVersB64(fichierChoisi);
-    message("#retour", "Envoi du fichier…", "info");
-    await envoyerBinaire(`entrees/${id}/${nom}`, b64, "Nouveau fichier " + id,
-      (p) => { barre.firstElementChild.style.width = Math.round(p * 95) + "%"; });
+    const f = fichierChoisi, n = Math.max(1, Math.ceil(f.size / TAILLE_PARTIE));
+    for (let i = 0; i < n; i++) {
+      const morceau = n === 1 ? f : f.slice(i * TAILLE_PARTIE, Math.min(f.size, (i + 1) * TAILLE_PARTIE));
+      const chemin = n === 1 ? `entrees/${id}/${nom}` : `entrees/${id}/${nom}.part${String(i + 1).padStart(3, "0")}`;
+      message("#retour", n === 1 ? "Envoi du fichier…" : `Envoi du fichier… morceau ${i + 1} sur ${n}`, "info");
+      const b64 = await fichierVersB64(morceau);
+      for (let essai = 1; ; essai++) {
+        try {
+          await envoyerBinaire(chemin, b64, `Nouveau fichier ${id}` + (n > 1 ? ` (${i + 1}/${n})` : ""),
+            (p) => { barre.firstElementChild.style.width = Math.round(((i + p) / n) * 95) + "%"; });
+          break;
+        } catch (e) {
+          if (essai >= 3) throw e;
+          await new Promise((r) => setTimeout(r, 2000 * essai));
+        }
+      }
+    }
     const job = {
-      fichier: nom, titre: fichierChoisi.name,
+      fichier: nom, parties: n > 1 ? n : undefined, titre: fichierChoisi.name,
       contexte: $("#contexte").value.trim(), lexique_extra: $("#argot").value.trim(),
       voix: valeur("voix"), mode: valeur("mode"), modele: valeur("modele"),
       fond: Number($("#fond").value), double: $("#double").checked,
