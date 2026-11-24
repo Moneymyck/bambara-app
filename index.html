@@ -107,6 +107,35 @@
   nav button svg { width: 24px; height: 24px; }
   nav button.active { color: var(--ocre); }
   .vide { color: var(--doux); text-align: center; padding: 20px 0; }
+  [hidden] { display: none !important; }
+  /* ---- Apprendre (collecte) ---- */
+  .micro-zone { display: flex; align-items: center; gap: 14px; }
+  .micro { width: 72px; height: 72px; border-radius: 50%; padding: 0; flex: none; display: flex;
+    align-items: center; justify-content: center; background: var(--ocre); color: #1b1305; }
+  .micro svg { width: 32px; height: 32px; }
+  .micro .stop { display: none; }
+  .micro.enreg { background: var(--rouge); color: #fff; animation: pulse 1.2s infinite; }
+  .micro.enreg .stop { display: block; }
+  .micro.enreg .mic { display: none; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(229,107,93,.6); } 100% { box-shadow: 0 0 0 14px rgba(229,107,93,0); } }
+  @media (prefers-reduced-motion: reduce) { .micro.enreg { animation: none; } }
+  .chrono { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chrono small { font-size: 15px; font-weight: 400; color: var(--doux); }
+  .lettres { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 8px; }
+  @media (max-width: 359px) { .lettres { grid-template-columns: repeat(4, 1fr); } }
+  .lettre { min-width: 0; padding: 8px 0; font-size: 19px; background: var(--carte2);
+    color: var(--texte); border: 1px solid var(--ligne); border-radius: 9px; }
+  .contrib { border-top: 1px solid var(--ligne); padding: 14px 0; }
+  .contrib:first-child { border-top: 0; }
+  .contrib .cbm { font-size: 17px; font-weight: 600; word-break: break-word; }
+  .contrib .cfr { margin-top: 2px; word-break: break-word; }
+  .contrib small { display: block; color: var(--doux); margin-top: 4px; word-break: break-word; }
+  .contrib .rangee { margin-top: 10px; }
+  .contrib .rangee button { flex: 1; }
+  .contrib .co-audio .petit { margin-top: 10px; }
+  .puce.validee { background: #173a28; color: var(--vert); }
+  .puce.refusee { background: #3d1b17; color: var(--rouge); }
+  .puce.a_verifier { background: #3a2a12; color: var(--ocre); }
 </style>
 </head>
 <body>
@@ -197,6 +226,62 @@
   </div>
 </section>
 
+<!-- ============ APPRENDRE (collecte de voix) ============ -->
+<section class="vue" id="v-collecte">
+  <div class="carte">
+    <h2>Apprends le bambara au robot</h2>
+    <p class="aide">Dis un mot ou une phrase en bambara, écris-le, puis donne la traduction en français.</p>
+    <div class="micro-zone" id="co-zone-micro" style="margin-top:14px">
+      <button type="button" class="micro" id="co-micro" aria-label="Enregistrer">
+        <svg class="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        <svg class="stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+      <div>
+        <div class="chrono"><span id="co-chrono">0:00</span> <small>/ 0:30</small></div>
+        <div class="aide" id="co-etat" style="margin:0">Touche le micro et parle. Touche encore pour arrêter.</div>
+      </div>
+    </div>
+    <div id="co-ecoute" hidden>
+      <audio controls id="co-lecteur"></audio>
+      <button type="button" class="secondaire petit" id="co-refaire" style="margin-top:8px">Refaire</button>
+    </div>
+    <label class="depot" id="co-depot" hidden style="margin-top:14px">
+      <strong>Choisir un fichier audio</strong>
+      <small>m4a, mp3, wav, ogg, webm, aac · 1 minute max</small>
+      <input type="file" id="co-fichier" accept="audio/*">
+    </label>
+
+    <label>C'est…</label>
+    <div class="choix">
+      <label><input type="radio" name="co-type" value="mot"><span>Un mot</span></label>
+      <label><input type="radio" name="co-type" value="phrase" checked><span>Une phrase</span></label>
+    </div>
+    <label for="co-bm">Ce que tu dis, en bambara</label>
+    <textarea id="co-bm" lang="bm" maxlength="1000" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"></textarea>
+    <div class="lettres" aria-label="Lettres du bambara">
+      <button type="button" class="lettre" data-c="ɛ">ɛ</button><button type="button" class="lettre" data-c="ɔ">ɔ</button><button type="button" class="lettre" data-c="ɲ">ɲ</button><button type="button" class="lettre" data-c="ŋ">ŋ</button><button type="button" class="lettre" data-c="Ɛ">Ɛ</button><button type="button" class="lettre" data-c="Ɔ">Ɔ</button><button type="button" class="lettre" data-c="Ɲ">Ɲ</button><button type="button" class="lettre" data-c="Ŋ">Ŋ</button>
+    </div>
+    <label for="co-fr">La traduction en français</label>
+    <textarea id="co-fr" maxlength="1000"></textarea>
+    <label for="co-pseudo">Ton pseudo</label>
+    <input type="text" id="co-pseudo" maxlength="40" autocapitalize="off" autocomplete="off">
+    <label for="co-region">Ta région ou ton parler (si tu veux)</label>
+    <input type="text" id="co-region" maxlength="60" placeholder="Ex : Ségou, Bamako, Kita…">
+    <label class="case"><input type="checkbox" id="co-accord"><span>J'accepte que ma voix et mes textes servent à améliorer la reconnaissance et la traduction du bambara. Je peux demander leur retrait. <small style="color:var(--doux)">(texte du 24/11/2026)</small></span></label>
+    <button class="principal" id="co-envoyer">Envoyer</button>
+    <p class="aide" id="co-attente"></p>
+    <div id="co-retour"></div>
+  </div>
+  <div class="carte">
+    <div class="rangee" style="justify-content:space-between">
+      <h2 style="margin:0">Contributions</h2>
+      <button class="secondaire petit" id="co-rafraichir">Actualiser</button>
+    </div>
+    <p class="aide">Écoute et dis si c'est juste. Ton avis aide le robot à apprendre.</p>
+    <div id="co-liste"><p class="vide">Chargement…</p></div>
+  </div>
+</section>
+
 <!-- ============ REGLAGES ============ -->
 <section class="vue" id="v-reglages">
   <div class="carte">
@@ -210,7 +295,7 @@
     <button class="principal" id="c-sauver">Enregistrer et tester</button>
     <div id="c-retour"></div>
     <p class="aide">Le jeton reste uniquement sur ce téléphone.</p>
-    <p class="aide">Version de l'app : 28/09 — B (envois en morceaux de 5 Mo)</p>
+    <p class="aide">Version de l'app : 24/11 — C (onglet Apprendre)</p>
     <p class="aide"><a id="lien-robot" href="#" target="_blank" rel="noopener">Voir le robot au travail sur GitHub</a></p>
   </div>
 </section>
@@ -225,6 +310,9 @@
   <button data-vue="lexique">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/><path d="M9 8h6M9 12h4"/></svg>
     Lexique</button>
+  <button data-vue="collecte">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+    Apprendre</button>
   <button data-vue="reglages">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
     Réglages</button>
@@ -257,6 +345,7 @@ function montrer(vue) {
   window.scrollTo(0, 0);
   if (vue === "historique") chargerHistorique();
   if (vue === "lexique") chargerLexique();
+  if (vue === "collecte") ouvrirCollecte(); else quitterCollecte();
 }
 document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => {
   if (!pret() && b.dataset.vue !== "reglages") { montrer("reglages"); message("#c-retour", "Commence par remplir la connexion.", "info"); return; }
@@ -275,18 +364,30 @@ function entetes(extra) {
     "X-GitHub-Api-Version": "2022-11-28",
   }, extra || {});
 }
+/* Limite de requêtes de GitHub (jeton partagé par tous les téléphones) : 429, ou 403 avec
+   x-ratelimit-remaining à 0 ou retry-after. entete(nom) lit un en-tête de la réponse. */
+function quotaAtteint(status, entete) {
+  return status === 429 || (status === 403 && (entete("x-ratelimit-remaining") === "0" || !!entete("retry-after")));
+}
+function texteQuota(entete) {
+  const apres = Number(entete("retry-after")), reset = Number(entete("x-ratelimit-reset"));
+  const min = apres > 0 ? Math.ceil(apres / 60) : reset > 0 ? Math.max(1, Math.ceil((reset * 1000 - Date.now()) / 60000)) : 0;
+  return "Trop de demandes à GitHub pour l'instant." + (min ? ` Réessaie dans ${min} min.` : " Réessaie plus tard.");
+}
 async function gh(chemin, options) {
   const r = await fetch(API + chemin, Object.assign({ cache: "no-store" }, options, { headers: entetes(options && options.headers) }));
   if (!r.ok) {
-    const err = new Error(r.status === 401 ? "Jeton GitHub invalide ou expiré." :
+    const entete = (n) => r.headers.get(n), quota = quotaAtteint(r.status, entete);
+    const err = new Error(quota ? texteQuota(entete) : r.status === 401 ? "Jeton GitHub invalide ou expiré." :
       r.status === 403 ? "Accès refusé : vérifie les permissions du jeton." :
       r.status === 404 ? "introuvable" : "Erreur GitHub " + r.status);
-    err.status = r.status;
+    err.status = r.status; err.quota = quota;
     throw err;
   }
   return r;
 }
-const contenu = (p) => `/repos/${cfg.owner}/${cfg.repo}/contents/${p}`;
+/* d = { owner, repo } : dépôt précis (file de collecte) ; sinon celui des Réglages. */
+const contenu = (p, d) => `/repos/${(d || cfg).owner}/${(d || cfg).repo}/contents/${p}`;
 
 function b64VersTexte(b64) {
   const bin = atob(b64.replace(/\s/g, ""));
@@ -309,19 +410,19 @@ async function lireBlob(p, type) {
   const r = await gh(contenu(p), { headers: { Accept: "application/vnd.github.raw" } });
   return new Blob([await r.arrayBuffer()], { type });
 }
-async function lister(p) {
-  try { return await (await gh(contenu(p))).json(); }
+async function lister(p, d) {
+  try { return await (await gh(contenu(p, d))).json(); }
   catch (e) { if (e.status === 404) return []; throw e; }
 }
-async function ecrireTexte(p, texte, msg, sha) {
+async function ecrireTexte(p, texte, msg, sha, d) {
   const corps = { message: msg, content: texteVersB64(texte) };
   if (sha) corps.sha = sha;
-  return (await gh(contenu(p), { method: "PUT", body: JSON.stringify(corps) })).json();
+  return (await gh(contenu(p, d), { method: "PUT", body: JSON.stringify(corps) })).json();
 }
-function envoyerBinaire(p, b64, msg, progression) {
+function envoyerBinaire(p, b64, msg, progression, d) {
   return new Promise((ok, ko) => {
     const x = new XMLHttpRequest();
-    x.open("PUT", API + contenu(p));
+    x.open("PUT", API + contenu(p, d));
     const h = entetes({ "Content-Type": "application/json" });
     Object.keys(h).forEach((k) => x.setRequestHeader(k, h[k]));
     x.upload.onprogress = (e) => { if (e.lengthComputable) progression(e.loaded / e.total); };
@@ -329,9 +430,14 @@ function envoyerBinaire(p, b64, msg, progression) {
       if (x.status >= 200 && x.status < 300) return ok(JSON.parse(x.responseText));
       let detail = "";
       try { detail = JSON.parse(x.responseText).message || ""; } catch (e) { detail = (x.responseText || "").slice(0, 120); }
-      ko(new Error("GitHub a refusé l'envoi (" + x.status + (detail ? " : " + detail : "") + ")."));
+      const tous = (x.getAllResponseHeaders() || "").toLowerCase();     // seulement les en-têtes exposés, sans erreur
+      const entete = (n) => { const m = new RegExp("^" + n + ":[ \\t]*(.*)$", "m").exec(tous); return m ? m[1].trim() : null; };
+      const quota = quotaAtteint(x.status, entete);
+      const err = new Error(quota ? texteQuota(entete) : "GitHub a refusé l'envoi (" + x.status + (detail ? " : " + detail : "") + ").");
+      err.status = x.status; err.quota = quota;
+      ko(err);
     };
-    x.onerror = () => ko(new Error("Connexion perdue pendant l'envoi."));
+    x.onerror = () => { const err = new Error("Connexion perdue pendant l'envoi."); err.status = 0; ko(err); };
     x.send(JSON.stringify({ message: msg, content: b64 }));
   });
 }
@@ -695,6 +801,682 @@ $("#lx-ajouter").addEventListener("click", async () => {
   }
 });
 
+/* ---------- COLLECTE (onglet Apprendre) ----------
+   Une contribution = collecte/<id>/audio.<ext> + fiche.json (écrite en dernier : elle marque
+   la contribution comme complète) + validations/<pseudo>.json (un fichier par personne). */
+const APP_VERSION = "2026-11-24-C";
+const CO_ACCORD_VERSION = "2026-11-24";
+const CO_DUREE_MAX = 30;                       // secondes d'enregistrement au micro
+const CO_DUREE_FICHIER = 60;                   // secondes au plus pour un fichier choisi
+const CO_TAILLE_MAX = 5 * 1024 * 1024;
+const CO_MAX_LISTE = 30;
+const CO_FORMATS = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"];
+const EXT_MIME = { "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/m4a": "m4a", "audio/webm": "webm",
+  "audio/ogg": "ogg", "audio/opus": "ogg", "audio/wav": "wav", "audio/x-wav": "wav", "audio/wave": "wav",
+  "audio/vnd.wave": "wav", "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/aac": "aac", "audio/x-aac": "aac", "audio/aacp": "aac" };
+const MIME_EXT = { m4a: "audio/mp4", webm: "audio/webm", ogg: "audio/ogg", wav: "audio/wav", mp3: "audio/mpeg", aac: "audio/aac" };
+const ID_COLLECTE = /^[A-Za-z0-9-]{1,80}$/;
+const AUDIO_OK = /^audio\.(m4a|webm|ogg|wav|mp3|aac)$/;
+const MIME_OK = /^audio\/[a-z0-9.+-]+(;[ a-z0-9=.,+"-]*)?$/i;
+const CO_LIBELLES = { a_verifier: "À vérifier", validee: "Validée", refusee: "Refusée" };
+
+const extAudio = (mime) => EXT_MIME[String(mime || "").split(";")[0].trim().toLowerCase()] || "";
+function extDuNom(nom) {
+  const m = /\.([a-z0-9]+)$/i.exec(nom || ""), e = m ? m[1].toLowerCase() : "";
+  return e === "opus" ? "ogg" : (MIME_EXT[e] ? e : "");
+}
+const nfc = (t) => String(t ?? "").normalize("NFC").replace(/\s+/g, " ").trim();
+/* Pseudo pour un nom de fichier : [a-z0-9-] seulement (ɛ→e, ɔ→o, ɲ→ny, ŋ→ng, accents retirés). */
+function pseudoFichier(p) {
+  return String(p ?? "").normalize("NFC").toLowerCase()
+    .replace(/ɛ/g, "e").replace(/ɔ/g, "o").replace(/ɲ/g, "ny").replace(/ŋ/g, "ng")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+/, "").slice(0, 40).replace(/-+$/, "");
+}
+const erreurReseau = (e) => !e || e.status === 0 || e instanceof TypeError;
+function texteErreur(e) {
+  if (erreurReseau(e)) return navigator.onLine === false ? "Tu es hors ligne." : "Connexion impossible. Vérifie ton réseau.";
+  if (e.status === 404) return "Dépôt introuvable : vérifie les Réglages.";
+  return e.message || "Erreur inconnue.";
+}
+const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
+function blobVersBuffer(b) {
+  if (b.arrayBuffer) return b.arrayBuffer();
+  return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => ko(r.error); r.readAsArrayBuffer(b); });
+}
+/* Erreur qui ne passera pas toute seule (jeton, droits, dépôt) : pas de reprise automatique. */
+const permanente = (e) => !!e && !e.quota && [401, 403, 404].includes(e.status);
+
+/* --- dépôt de la collecte : on n'écrit QUE dans un dépôt privé --- */
+const depotDe = (rec) => (rec && rec.depot && rec.depot.owner && rec.depot.repo ? rec.depot : { owner: cfg.owner, repo: cfg.repo });
+const cleDepot = (d) => `${d.owner}/${d.repo}`.toLowerCase();
+const coPrives = new Set();             // dépôts vus privés pendant cette session (un « public » est revérifié)
+function noterDepot(d, info) { if (info && info.private === true) coPrives.add(cleDepot(d)); else coPrives.delete(cleDepot(d)); }
+async function depotPrive(d) {
+  if (coPrives.has(cleDepot(d))) return true;
+  noterDepot(d, await (await gh(`/repos/${d.owner}/${d.repo}`)).json());
+  return coPrives.has(cleDepot(d));
+}
+const CO_NON_PRIVE = "Le dépôt n'est pas privé : rien n'est envoyé. Passe-le en privé sur GitHub, puis touche « Enregistrer et tester » dans Réglages.";
+
+/* Vrai format d'un fichier d'après ses premiers octets ("" si ce n'est pas un son). */
+function formatDuSon(o) {
+  const txt = (a, b) => String.fromCharCode.apply(null, o.subarray(a, b));
+  if (txt(4, 8) === "ftyp") return /^(hei[cfmsx]|hev[cx]|mif1|msf1|avi[fs]|crx )/.test(txt(8, 12)) ? "" : "m4a";   // pas une photo HEIC/AVIF
+  if (txt(0, 4) === "RIFF" && txt(8, 12) === "WAVE") return "wav";
+  if (txt(0, 4) === "OggS") return "ogg";
+  if (o[0] === 0x1a && o[1] === 0x45 && o[2] === 0xdf && o[3] === 0xa3) return "webm";
+  if (txt(0, 3) === "ID3") return "id3";
+  if (o[0] === 0xff && (o[1] & 0xf6) === 0xf0) return "aac";                       // ADTS : FF F0/F1/F8/F9
+  if (o[0] === 0xff && (o[1] & 0xe0) === 0xe0 && (o[1] & 0x06)) return "mp3";      // trame MPEG audio
+  return "";
+}
+
+/* --- profil (pseudo, région, accord) gardé sur ce téléphone --- */
+function coProfil() { return { pseudo: nfc($("#co-pseudo").value).slice(0, 40), region: nfc($("#co-region").value).slice(0, 60) }; }
+function coSauverProfil() { const p = coProfil(); ecrireLocal("bf_co_profil", p); return p; }
+/* L'accord est donné par UNE personne : il est gardé avec son pseudo normalisé et ne vaut que pour lui. */
+function coAccord(pseudo) {
+  const a = lireLocal("bf_co_accord", null), qui = pseudoFichier(pseudo);
+  return a && a.version === CO_ACCORD_VERSION && qui && a.pseudo === qui && typeof a.accepte_le === "string" ? a : null;
+}
+function coRetirerAccord() { $("#co-accord").checked = false; ecrireLocal("bf_co_accord", null); }
+
+/* --- lettres du bambara : insertion au curseur, sans faire perdre le focus --- */
+function insererAuCurseur(ta, c) {
+  const debut = ta.selectionStart ?? ta.value.length, fin = ta.selectionEnd ?? debut;
+  ta.setRangeText(c, debut, fin, "end");
+  ta.focus();
+  ta.dispatchEvent(new Event("input", { bubbles: true }));
+}
+const htmlLettres = () => '<div class="lettres">' + ["ɛ", "ɔ", "ɲ", "ŋ", "Ɛ", "Ɔ", "Ɲ", "Ŋ"]
+  .map((c) => `<button type="button" class="lettre" data-c="${c}">${c}</button>`).join("") + "</div>";
+["pointerdown", "mousedown"].forEach((t) => document.addEventListener(t, (e) => {
+  if (e.target.closest && e.target.closest(".lettre")) e.preventDefault();
+}));
+document.addEventListener("click", (e) => {
+  const b = e.target.closest && e.target.closest(".lettre");
+  if (!b) return;
+  const ta = b.closest(".lettres").previousElementSibling;
+  if (ta && ta.tagName === "TEXTAREA") insererAuCurseur(ta, b.dataset.c);
+});
+
+/* --- enregistrement --- */
+let coFlux = null, coRec = null, coDemarre = false, coChrono = null, coArret = null, coDebut = 0;
+let coAudio = null, coUrlEcoute = "";     // coAudio = { blob, mime, ext, duree }
+const coEtat = (t) => { $("#co-etat").textContent = t; };
+function coAfficherChrono(s) {
+  const n = Math.max(0, Math.min(99, Math.floor(s)));
+  $("#co-chrono").textContent = `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
+}
+function coLibererMicro() { if (coFlux) coFlux.getTracks().forEach((t) => t.stop()); coFlux = null; }
+function coSansMicro(texte) { $("#co-depot").hidden = false; coEtat(texte); }
+function coEffacerAudio() {
+  coAudio = null;
+  const l = $("#co-lecteur"); l.pause(); l.removeAttribute("src"); l.load();
+  if (coUrlEcoute) URL.revokeObjectURL(coUrlEcoute);
+  coUrlEcoute = ""; $("#co-ecoute").hidden = true; coAfficherChrono(0);
+}
+function coPoserAudio(blob, mime, ext, duree) {
+  coEffacerAudio();
+  coAudio = { blob, mime, ext, duree };
+  coUrlEcoute = URL.createObjectURL(blob);
+  $("#co-lecteur").src = coUrlEcoute; $("#co-ecoute").hidden = false;
+  coAfficherChrono(duree);
+  coEtat(duree ? `C'est prêt (${String(duree).replace(".", ",")} s). Réécoute avant d'envoyer.` : "C'est prêt. Réécoute avant d'envoyer.");
+}
+async function coDemarrer() {
+  if (coDemarre || coRec) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
+    coSansMicro("Pas de micro ici : choisis un fichier audio."); return;
+  }
+  coDemarre = true;
+  try {
+    try { coFlux = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) {
+      coLibererMicro();
+      coSansMicro(e && e.name === "NotFoundError" ? "Aucun micro trouvé : choisis un fichier audio."
+        : "Micro refusé. Autorise le micro pour ce site dans Safari, ou choisis un fichier audio.");
+      return;
+    }
+    const type = CO_FORMATS.find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || "";
+    let rec;
+    try { rec = type ? new MediaRecorder(coFlux, { mimeType: type }) : new MediaRecorder(coFlux); }
+    catch (e) { coLibererMicro(); coSansMicro("Enregistrement impossible ici : choisis un fichier audio."); return; }
+    coEffacerAudio();
+    const morceaux = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) morceaux.push(e.data); };
+    const fin = () => {
+      clearInterval(coChrono); clearTimeout(coArret); coLibererMicro(); coRec = null;
+      $("#co-micro").classList.remove("enreg"); $("#co-micro").setAttribute("aria-label", "Enregistrer");
+    };
+    rec.onstop = () => {
+      const duree = Math.min(CO_DUREE_MAX, Math.round((performance.now() - coDebut) / 100) / 10);
+      fin();
+      const mime = String(rec.mimeType || type || (morceaux[0] && morceaux[0].type) || "").toLowerCase();
+      const ext = extAudio(mime);
+      if (!morceaux.length || !ext) { coAfficherChrono(0); coEtat("Rien n'a été enregistré. Réessaie."); return; }
+      coPoserAudio(new Blob(morceaux, { type: mime }), mime, ext, duree);
+    };
+    rec.onerror = () => { if (rec.state !== "inactive") rec.stop(); else { fin(); coEtat("L'enregistrement a coupé. Réessaie."); } };
+    coRec = rec;
+    rec.start();
+    coDebut = performance.now();
+    $("#co-micro").classList.add("enreg"); $("#co-micro").setAttribute("aria-label", "Arrêter");
+    coEtat("J'écoute… Touche encore pour arrêter.");
+    coChrono = setInterval(() => coAfficherChrono((performance.now() - coDebut) / 1000), 200);
+    coArret = setTimeout(coArreter, CO_DUREE_MAX * 1000);
+  } finally { coDemarre = false; }
+}
+function coArreter() { if (coRec && coRec.state !== "inactive") coRec.stop(); }
+function dureeAudio(blob) {
+  return new Promise((ok) => {
+    const a = document.createElement("audio"), u = URL.createObjectURL(blob);
+    let fait = false;
+    const fin = (d) => {
+      if (fait) return; fait = true; clearTimeout(t); URL.revokeObjectURL(u); a.removeAttribute("src");
+      ok(Number.isFinite(d) && d > 0 ? Math.round(d * 10) / 10 : 0);
+    };
+    const t = setTimeout(() => fin(0), 4000);
+    a.preload = "metadata"; a.onloadedmetadata = () => fin(a.duration); a.onerror = () => fin(0); a.src = u;
+  });
+}
+$("#co-micro").addEventListener("click", () => (coRec ? coArreter() : coDemarrer()));
+$("#co-refaire").addEventListener("click", () => { coEffacerAudio(); coEtat("Touche le micro et parle. Touche encore pour arrêter."); });
+$("#co-fichier").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  const type = String(f.type || "").toLowerCase(), ext = extAudio(type) || extDuNom(f.name);
+  if (!ext) { coEtat("Format non pris en charge : m4a, mp3, wav, ogg, webm ou aac."); return; }
+  if (f.size > CO_TAILLE_MAX) { coEtat("Fichier trop lourd (5 Mo max). Prends un extrait court."); return; }
+  let sig = "";
+  try { sig = formatDuSon(new Uint8Array(await blobVersBuffer(f.slice(0, 12)))); } catch (x) {}
+  if (!sig) { coEtat("Ce fichier n'est pas un son."); return; }
+  const vrai = sig === "id3" ? (ext === "aac" ? "aac" : "mp3") : sig;     // l'extension suit le contenu réel
+  const duree = await dureeAudio(f);                                        // 0 si illisible ici (ogg/webm sur Safari) : accepté
+  if (duree > CO_DUREE_FICHIER) { coEtat("Trop long : garde un extrait d'une minute au plus."); return; }
+  coPoserAudio(f, extAudio(type) === vrai ? type : MIME_EXT[vrai], vrai, duree);
+});
+
+/* --- file d'attente (IndexedDB, repli en mémoire si le stockage est bloqué) --- */
+/* Sur iPhone, la connexion IndexedDB peut se fermer quand l'appli passe en arrière-plan :
+   on l'oublie alors (onclose, onversionchange) et chaque transaction ratée est refaite une fois
+   après réouverture. */
+let coDB = null;
+const coMemoire = new Map();
+function coOuvrir() {
+  if (coDB) return coDB;
+  const p = new Promise((ok) => {
+    try {
+      const r = indexedDB.open("bf_collecte", 1);
+      r.onupgradeneeded = () => r.result.createObjectStore("file", { keyPath: "id" });
+      r.onsuccess = () => {
+        const db = r.result, oublier = () => { if (coDB === p) coDB = null; };
+        db.onclose = oublier;
+        db.onversionchange = () => { db.close(); oublier(); };
+        ok(db);
+      };
+      r.onerror = () => ok(null);
+      r.onblocked = () => ok(null);
+    } catch (e) { ok(null); }
+  });
+  coDB = p;
+  p.then((db) => { if (!db && coDB === p) coDB = null; });   // échec : on réessaiera d'ouvrir la prochaine fois
+  return p;
+}
+async function fileTx(mode, faire, reessai = true) {
+  const db = await coOuvrir();
+  try {
+    if (!db) throw new Error("Stockage du téléphone indisponible.");
+    return await new Promise((ok, ko) => {
+      const tx = db.transaction("file", mode), req = faire(tx.objectStore("file"));
+      tx.oncomplete = () => ok(req.result);
+      tx.onerror = tx.onabort = () => ko(tx.error || new Error("Stockage du téléphone indisponible."));
+    });
+  } catch (e) {
+    if (!reessai) throw e;
+    if (db) { try { db.close(); } catch (x) {} }
+    coDB = null;
+    return fileTx(mode, faire, false);
+  }
+}
+/* panne = le stockage n'a pas répondu (ce n'est pas « file vide ») ; memoire = gardées seulement en mémoire. */
+async function fileTous() {
+  let r = [], panne = false;
+  try { r = (await fileTx("readonly", (s) => s.getAll())) || []; } catch (e) { panne = true; }
+  const vus = new Set(r.map((x) => x.id)), memoire = [...coMemoire.values()].filter((x) => !vus.has(x.id));
+  return { recs: r.concat(memoire).sort((a, b) => (a.id < b.id ? -1 : 1)), memoire: memoire.length, panne };
+}
+async function fileMettre(rec) {
+  try { await fileTx("readwrite", (s) => s.put(rec)); coMemoire.delete(rec.id); return true; }
+  catch (e) { coMemoire.set(rec.id, rec); return false; }
+}
+async function fileRetirer(id) {
+  coMemoire.delete(id);
+  try { await fileTx("readwrite", (s) => s.delete(id)); } catch (e) {}
+}
+/* Compteur durable (#co-attente) : les messages d'envoi ne l'effacent pas. */
+async function majAttente() {
+  const { recs, memoire, panne } = await fileTous(), n = recs.length, z = $("#co-attente");
+  let t = n ? `${n} en attente d'envoi` : "";
+  if (memoire) t += ` (${memoire} ${memoire > 1 ? "gardées" : "gardée"} seulement en mémoire : garde l'appli ouverte jusqu'à l'envoi)`;
+  else if (panne) t += (t ? ". " : "") + "Le stockage du téléphone ne répond pas : garde l'appli ouverte jusqu'à la fin des envois.";
+  z.textContent = t;
+  z.style.color = memoire || panne ? "var(--rouge)" : "";
+  return n;
+}
+
+async function coExiste(dossier, nom, d) {
+  try { const l = await lister(dossier, d); return Array.isArray(l) && l.some((f) => f.name === nom); } catch (e) { return false; }
+}
+/* Audio d'abord, fiche.json ensuite. Un 422 veut dire « déjà là » quand un essai précédent
+   a réussi sans que la réponse arrive : on vérifie avant de continuer. */
+async function envoyerContribution(rec) {
+  const dossier = `collecte/${rec.id}`, d = depotDe(rec);
+  if (!rec.audioEnvoye) {
+    const b64 = await fichierVersB64(new Blob([rec.donnees], { type: rec.mime }));
+    try { await envoyerBinaire(`${dossier}/${rec.fiche.fichier}`, b64, "Collecte audio " + rec.id, () => {}, d); }
+    catch (e) { if (e.status !== 422 || !(await coExiste(dossier, rec.fiche.fichier, d))) throw e; }
+    rec.audioEnvoye = true;
+    await fileMettre(rec);
+  }
+  try { await ecrireTexte(`${dossier}/fiche.json`, JSON.stringify(rec.fiche, null, 1), "Collecte " + rec.id, undefined, d); }
+  catch (e) { if (e.status !== 422 || !(await coExiste(dossier, "fiche.json", d))) throw e; }
+}
+/* Reprise automatique après un échec passager, tant que l'appli est visible : 30 s, 2 min, puis 5 min. */
+const CO_PAUSES = [30, 120, 300];
+let coPause = 0, coMinuteur = null;
+function programmerReprise() {
+  clearTimeout(coMinuteur);
+  const s = CO_PAUSES[Math.min(coPause, CO_PAUSES.length - 1)];
+  coPause++;
+  coMinuteur = setTimeout(() => { coMinuteur = null; if (document.visibilityState !== "hidden") viderFile(); }, s * 1000);
+  return s < 60 ? `${s} s` : `${s / 60} min`;
+}
+function annulerReprise() { clearTimeout(coMinuteur); coMinuteur = null; coPause = 0; }
+let coVidage = null, coRelance = false;
+function viderFile() {
+  if (coVidage) { coRelance = true; return coVidage; }   // un vidage tourne : on repassera juste après
+  coRelance = false;
+  coVidage = viderFileMaintenant().catch(() => {}).finally(() => {
+    coVidage = null; majAttente();
+    if (coRelance) viderFile();
+  });
+  return coVidage;
+}
+async function viderFileMaintenant() {
+  if (!pret()) return;
+  const n = await majAttente();
+  if (!n) { annulerReprise(); return; }
+  if (navigator.onLine === false) {
+    message("#co-retour", `Tu es hors ligne. ${n} en attente : l'envoi repartira tout seul au retour du réseau.`, "info");
+    return;
+  }
+  const tentes = new Set(), bloques = new Set();     // bloques : dépôts non privés ou inaccessibles
+  let envoyees = 0, nonPrive = false, echec = null, passager = false;
+  for (;;) {
+    const rec = (await fileTous()).recs.find((r) => !tentes.has(r.id) && !bloques.has(cleDepot(depotDe(r))));
+    if (!rec) break;
+    tentes.add(rec.id);
+    const d = depotDe(rec);
+    let derniere = null;
+    try { if (!(await depotPrive(d))) { bloques.add(cleDepot(d)); nonPrive = true; continue; } }
+    catch (e) { derniere = e; }
+    if (!derniere) for (let essai = 1; essai <= 3; essai++) {
+      try { await envoyerContribution(rec); derniere = null; break; }
+      catch (e) {
+        derniere = e;
+        if (permanente(e) || e.quota || essai === 3) break;
+        await attendre(2000 * essai);
+      }
+    }
+    if (!derniere) {
+      await fileRetirer(rec.id); envoyees++; await majAttente();
+      coAjouterCarte(rec);
+      continue;
+    }
+    rec.essais = (rec.essais || 0) + 1; rec.erreur = String(derniere.message || "");
+    await fileMettre(rec);
+    echec = derniere;
+    if (permanente(derniere)) { bloques.add(cleDepot(d)); continue; }
+    passager = true;
+    if (erreurReseau(derniere) || derniere.quota) break;      // inutile d'essayer les suivantes maintenant
+  }
+  const reste = await majAttente(), textes = [];
+  if (envoyees) textes.push(envoyees === 1 ? "Contribution envoyée ✓ Merci !" : `${envoyees} contributions envoyées ✓ Merci !`);
+  if (nonPrive) textes.push(CO_NON_PRIVE);
+  if (passager && reste) {
+    const dans = programmerReprise();
+    textes.push((erreurReseau(echec) ? "Envoi impossible pour l'instant (réseau)." : "L'envoi a échoué : " + esc(texteErreur(echec)))
+      + ` ${reste} en attente : nouvel essai dans ${dans}.`);
+  } else {
+    annulerReprise();
+    if (echec && reste) textes.push(`L'envoi a échoué : ${esc(texteErreur(echec))} ${reste} en attente : l'envoi repartira quand ce sera corrigé dans Réglages.`);
+  }
+  if (textes.length) message("#co-retour", textes.join(" "), echec || nonPrive ? "err" : "ok");
+}
+
+$("#co-envoyer").addEventListener("click", async () => {
+  if (!pret()) { montrer("reglages"); return; }
+  if (coRec || coDemarre) { message("#co-retour", "Arrête d'abord l'enregistrement.", "err"); return; }
+  const p = coSauverProfil(), bm = nfc($("#co-bm").value), fr = nfc($("#co-fr").value);
+  if (!coAudio) { message("#co-retour", "Enregistre d'abord ta voix (ou choisis un fichier audio).", "err"); return; }
+  if (!bm) { message("#co-retour", "Écris ce que tu dis en bambara.", "err"); return; }
+  if (!fr) { message("#co-retour", "Écris la traduction en français.", "err"); return; }
+  if (!pseudoFichier(p.pseudo)) { message("#co-retour", "Écris ton pseudo (avec des lettres ou des chiffres).", "err"); return; }
+  const accord = coAccord(p.pseudo);
+  if (!$("#co-accord").checked || !accord) { coRetirerAccord(); message("#co-retour", "Coche la case d'accord pour envoyer.", "err"); return; }
+  const bouton = $("#co-envoyer");
+  bouton.disabled = true;
+  try {
+    const maintenant = new Date().toISOString(), id = nouvelId();
+    const fiche = {
+      version: 1, id, bm, fr, type: valeur("co-type") === "mot" ? "mot" : "phrase",
+      fichier: "audio." + coAudio.ext, mime: coAudio.mime, duree_s: coAudio.duree,
+      locuteur: p.pseudo, region: p.region,
+      consentement: { version: CO_ACCORD_VERSION, accepte_le: accord.accepte_le },
+      app_version: APP_VERSION, cree_le: maintenant,
+    };
+    let donnees;
+    try { donnees = await blobVersBuffer(coAudio.blob); }
+    catch (e) { message("#co-retour", "Impossible de lire l'enregistrement. Refais-le.", "err"); return; }
+    // le dépôt est fixé maintenant : la voix ne partira que vers lui, même si les Réglages changent
+    const durable = await fileMettre({ id, donnees, mime: coAudio.mime, fiche, depot: { owner: cfg.owner, repo: cfg.repo }, audioEnvoye: false, essais: 0 });
+    coEffacerAudio(); $("#co-bm").value = ""; $("#co-fr").value = "";
+    coEtat("Touche le micro pour la suivante.");
+    message("#co-retour", (navigator.onLine === false
+      ? "Tu es hors ligne : ta contribution est gardée sur le téléphone. Elle partira toute seule au retour du réseau."
+      : "Envoi en cours…") + (durable ? "" : " Attention : garde l'appli ouverte jusqu'à la fin de l'envoi."), durable ? "info" : "err");
+    await majAttente();
+    viderFile();
+  } finally { bouton.disabled = false; }
+});
+
+/* --- liste des contributions et validations --- */
+function statutContribution(fiche, vals) {
+  const auteur = pseudoFichier(fiche.locuteur), autres = vals.filter((v) => v.qui !== auteur);
+  if (autres.some((v) => v.valide === false)) return "refusee";
+  if (autres.some((v) => v.valide === true)) return "validee";
+  return "a_verifier";
+}
+function texteRetenu(fiche, vals) {
+  const recentes = vals.slice().sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0));
+  const vbm = recentes.find((v) => typeof v.bm_corrige === "string" && v.bm_corrige.trim());
+  const vfr = recentes.find((v) => typeof v.fr_corrige === "string" && v.fr_corrige.trim());
+  return { bm: vbm ? vbm.bm_corrige : fiche.bm, fr: vfr ? vfr.fr_corrige : fiche.fr, corrige: !!(vbm || vfr) };
+}
+/* Économie de requêtes (jeton partagé) : l'arbre de collecte/ est lu en un appel, et les fiches
+   et avis déjà lus sont gardés en mémoire selon leur sha (une fiche.json ne change jamais). */
+const coCache = new Map();               // "owner/repo/chemin" -> { sha, v }
+async function lireJSONConnu(chemin, sha) {
+  const k = cleDepot(cfg) + "/" + chemin, c = coCache.get(k);
+  if (c && (!sha || c.sha === sha)) return c.v;
+  const f = await lireFichier(chemin), v = JSON.parse(f.texte);
+  coCache.set(k, { sha: f.sha, v });
+  return v;
+}
+/* Map id -> { fiche: sha | null, vals: [{ qui, sha }] }, ou null si l'arbre est trop gros (ancienne méthode). */
+async function indexCollecte() {
+  const racine = await lister("");
+  const dossier = (Array.isArray(racine) ? racine : []).find((e) => e.name === "collecte" && e.type === "dir");
+  if (!dossier) return new Map();
+  const t = await (await gh(`/repos/${cfg.owner}/${cfg.repo}/git/trees/${dossier.sha}?recursive=1`)).json();
+  if (!t || t.truncated || !Array.isArray(t.tree)) return null;
+  const index = new Map();
+  for (const e of t.tree) {
+    const m = e.type === "blob" && /^([^/]+)\/(?:(fiche\.json)|validations\/([a-z0-9-]+)\.json)$/.exec(e.path || "");
+    if (!m || !ID_COLLECTE.test(m[1])) continue;
+    const x = index.get(m[1]) || { fiche: null, vals: [] };
+    if (m[2]) x.fiche = e.sha; else x.vals.push({ qui: m[3], sha: e.sha });
+    index.set(m[1], x);
+  }
+  return index;
+}
+async function chargerContribution(id, info) {
+  try {
+    let fiche, liste;
+    if (info) { fiche = await lireJSONConnu(`collecte/${id}/fiche.json`, info.fiche); liste = info.vals; }
+    else {
+      const [f, l] = await Promise.all([lireJSONConnu(`collecte/${id}/fiche.json`), lister(`collecte/${id}/validations`)]);
+      fiche = f;
+      liste = (Array.isArray(l) ? l : []).filter((x) => x.type === "file" && /^[a-z0-9-]+\.json$/.test(x.name))
+        .map((x) => ({ qui: x.name.slice(0, -5), sha: x.sha }));
+    }
+    if (!fiche || typeof fiche.bm !== "string" || typeof fiche.fr !== "string" || !AUDIO_OK.test(fiche.fichier || "")) return null;
+    const vals = (await Promise.all(liste.map(async ({ qui, sha }) => {
+      try {
+        const v = await lireJSONConnu(`collecte/${id}/validations/${qui}.json`, sha);
+        return v && typeof v.valide === "boolean" ? Object.assign({}, v, { qui, sha }) : null;
+      } catch (e) { if (erreurReseau(e) || e.quota) throw e; return null; }
+    }))).filter(Boolean);
+    return { id, fiche, vals };
+  } catch (e) {
+    if (erreurReseau(e) || e.quota || e.status === 401 || e.status === 403) throw e;
+    return null;                          // fiche absente (envoi pas fini) ou illisible
+  }
+}
+/* Ta contribution ou celle d'une autre personne : suit le pseudo courant sans redessiner la carte
+   (un redessin au moment où le champ pseudo perd le focus ferait perdre le toucher en cours). */
+function coEtatPseudo(c) {
+  const moi = pseudoFichier(coProfil().pseudo), avis = moi ? c.vals.find((v) => v.qui === moi) : null;
+  return {
+    mienne: !!moi && moi === pseudoFichier(c.fiche.locuteur),
+    avis: !avis ? "" : `Ton avis : ${avis.valide === false ? "faux" : (avis.bm_corrige || avis.fr_corrige) ? "corrigé" : "juste"}.`,
+  };
+}
+function coMajPseudo(el, c) {
+  const e = coEtatPseudo(c);
+  el.querySelector(".co-moi").hidden = !e.mienne;
+  el.querySelector(".co-autre").hidden = e.mienne;
+  el.querySelector(".co-avis").textContent = e.avis;
+  el.querySelector(".co-avis").hidden = !e.avis;
+}
+function htmlContribution(c) {
+  const { id, fiche, vals } = c;
+  const st = statutContribution(fiche, vals), t = texteRetenu(fiche, vals), e = coEtatPseudo(c);
+  const infos = [fiche.type === "mot" ? "Mot" : "Phrase", "par " + (fiche.locuteur || "?"), fiche.region, dateDe(id)]
+    .filter(Boolean).map(esc).join(" · ");
+  return `<div class="contrib" data-id="${esc(id)}">
+    <div class="rangee" style="justify-content:space-between;align-items:flex-start;margin-top:0">
+      <div class="cbm" lang="bm">${esc(t.bm)}</div><span class="puce ${st}">${CO_LIBELLES[st]}</span></div>
+    <div class="cfr">${esc(t.fr)}</div>
+    ${t.corrige ? `<small>Avant correction : ${esc(fiche.bm)} — ${esc(fiche.fr)}</small>` : ""}
+    <small>${infos}</small>
+    <div class="co-audio"><button type="button" class="secondaire petit co-ecouter">Écouter</button></div>
+    <p class="aide co-moi"${e.mienne ? "" : " hidden"}>Ta contribution : une autre personne va la vérifier.</p>
+    <div class="co-autre"${e.mienne ? " hidden" : ""}>
+      <p class="aide co-avis"${e.avis ? "" : " hidden"}>${esc(e.avis)}</p>
+      <div class="rangee co-actions">
+        <button type="button" class="secondaire petit" data-avis="juste">Juste</button>
+        <button type="button" class="secondaire petit" data-avis="corriger">Corriger</button>
+        <button type="button" class="secondaire petit" data-avis="faux">Faux</button>
+      </div>
+      <div class="co-form" hidden></div>
+    </div>
+    <div class="co-msg"></div>
+  </div>`;
+}
+let coItems = new Map(), coJeton = 0, coUrlsListe = [], coListeDepot = null;
+const coEnvoyees = new Map();            // id -> { dk, fiche } : envoyées depuis ce téléphone pendant la session
+function coLibererListe() { coUrlsListe.forEach((u) => URL.revokeObjectURL(u)); coUrlsListe = []; }
+const carteDe = (id) => [...document.querySelectorAll("#co-liste .contrib")].find((x) => x.dataset.id === id) || null;
+async function chargerContributions() {
+  if (!pret()) return;
+  const jeton = ++coJeton, zone = $("#co-liste"), dk = cleDepot(cfg);
+  coListeDepot = null;
+  zone.innerHTML = '<p class="vide">Chargement…</p>';
+  try {
+    const index = await indexCollecte();
+    let ids;
+    if (index) ids = [...index.keys()].filter((id) => index.get(id).fiche);
+    else {
+      const dossiers = await lister("collecte");
+      ids = (Array.isArray(dossiers) ? dossiers : []).filter((d) => d.type === "dir" && ID_COLLECTE.test(d.name)).map((d) => d.name);
+    }
+    ids.sort().reverse();
+    const items = [];
+    for (let i = 0; i < ids.length && items.length < CO_MAX_LISTE; i += 10) {
+      const lot = await Promise.all(ids.slice(i, i + 10).map((id) => chargerContribution(id, index && index.get(id))));
+      lot.forEach((c) => { if (c && items.length < CO_MAX_LISTE) items.push(c); });
+    }
+    if (jeton !== coJeton) return;
+    // une contribution envoyée pendant le chargement peut manquer à l'arbre lu : on la garde
+    for (const [id, x] of coEnvoyees) if (x.dk === dk && !items.some((c) => c.id === id)) items.push({ id, fiche: x.fiche, vals: [] });
+    items.sort((a, b) => (a.id < b.id ? 1 : -1));
+    items.length = Math.min(items.length, CO_MAX_LISTE);
+    coLibererListe();
+    coItems = new Map(items.map((c) => [c.id, c]));
+    zone.innerHTML = items.length ? items.map(htmlContribution).join("")
+      : '<p class="vide">Aucune contribution pour l\'instant. Lance-toi !</p>';
+    coListeDepot = dk;
+  } catch (e) {
+    if (jeton === coJeton) zone.innerHTML = `<div class="msg err">${esc(texteErreur(e))}</div>`;
+  }
+}
+/* Après un envoi : la carte est ajoutée en tête, sans recharger ni redessiner la liste
+   (un formulaire « Corriger » ouvert ou une écoute en cours restent intacts). */
+function coAjouterCarte(rec) {
+  const dk = cleDepot(depotDe(rec));
+  coEnvoyees.set(rec.id, { dk, fiche: rec.fiche });
+  if (coListeDepot !== dk || dk !== cleDepot(cfg) || coItems.has(rec.id)) return;
+  const c = { id: rec.id, fiche: rec.fiche, vals: [] }, zone = $("#co-liste"), tmp = document.createElement("div");
+  coItems.set(c.id, c);
+  tmp.innerHTML = htmlContribution(c);
+  zone.querySelectorAll(":scope > .vide").forEach((x) => x.remove());
+  zone.prepend(tmp.firstElementChild);
+}
+function coRedessiner(el, c) {
+  const audio = el.querySelector(".co-audio audio"), tmp = document.createElement("div");
+  tmp.innerHTML = htmlContribution(c);
+  const neuf = tmp.firstElementChild;
+  if (audio) { const z = neuf.querySelector(".co-audio"); z.innerHTML = ""; z.appendChild(audio); }
+  el.replaceWith(neuf);
+  return neuf;
+}
+async function coEcouter(el, c, bouton) {
+  bouton.disabled = true; bouton.textContent = "Chargement…";
+  try {
+    const mime = MIME_OK.test(c.fiche.mime || "") ? c.fiche.mime : MIME_EXT[c.fiche.fichier.split(".").pop()];
+    const u = URL.createObjectURL(await lireBlob(`collecte/${c.id}/${c.fiche.fichier}`, mime));
+    coUrlsListe.push(u);
+    const zone = (carteDe(c.id) || el).querySelector(".co-audio");      // la liste a pu être rechargée entre-temps
+    zone.innerHTML = `<audio controls src="${u}"></audio>`;
+    zone.querySelector("audio").play().catch(() => {});
+  } catch (e) {
+    const ici = carteDe(c.id) || el, b = ici.querySelector(".co-ecouter");
+    if (b) { b.disabled = false; b.textContent = "Écouter"; }
+    ici.querySelector(".co-msg").innerHTML = `<div class="msg err">${esc(texteErreur(e))}</div>`;
+  }
+}
+/* sha connu (avis déjà lu ou écrit) : un seul PUT ; sinon, ou en cas de conflit, on relit le sha. */
+async function ecrireValidation(id, qui, corps, sha) {
+  const chemin = `collecte/${id}/validations/${qui}.json`;
+  for (let essai = 0; essai < 3; essai++) {
+    try {
+      const r = await ecrireTexte(chemin, JSON.stringify(corps, null, 1), `Validation ${id} (${qui})`, sha);
+      return r && r.content && r.content.sha;
+    } catch (e) {
+      if (![409, 422].includes(e.status) || essai === 2) throw e;
+      try { sha = (await (await gh(contenu(chemin))).json()).sha; } catch (x) { if (x.status !== 404) throw x; sha = undefined; }
+    }
+  }
+}
+async function coDonnerAvis(el, c, valide, corrections) {
+  // La liste peut être redessinée pendant l'attente : on retrouve toujours la carte par son id.
+  const ici = () => carteDe(c.id) || el;
+  const msg = (t, type) => { const z = ici().querySelector(".co-msg"); if (z) z.innerHTML = `<div class="msg ${type}">${t}</div>`; };
+  const boutons = (off) => ici().querySelectorAll(".co-actions button, .co-form button").forEach((b) => { b.disabled = off; });
+  const p = coSauverProfil(), qui = pseudoFichier(p.pseudo);
+  if (!qui) { msg("Écris d'abord ton pseudo, en haut de l'onglet.", "err"); $("#co-pseudo").focus(); return; }
+  if (qui === pseudoFichier(c.fiche.locuteur)) { msg("C'est ta contribution : une autre personne doit la vérifier.", "err"); return; }
+  boutons(true);
+  msg("Enregistrement…", "info");
+  try {
+    if (!(await depotPrive(cfg))) { boutons(false); msg(CO_NON_PRIVE, "err"); return; }
+    const corps = Object.assign({ valide }, corrections || {}, { par: p.pseudo, date: new Date().toISOString() });
+    const avant = c.vals.find((v) => v.qui === qui);
+    const sha = await ecrireValidation(c.id, qui, corps, avant && avant.sha);
+    const cur = coItems.get(c.id) || c;
+    cur.vals = cur.vals.filter((v) => v.qui !== qui).concat([Object.assign({}, corps, { qui, sha })]);
+    const carte = carteDe(c.id);
+    if (carte) coRedessiner(carte, cur).querySelector(".co-msg").innerHTML = '<div class="msg ok">Merci, ton avis est enregistré ✓</div>';
+  } catch (e) {
+    boutons(false);
+    msg(esc(texteErreur(e)), "err");
+  }
+}
+$("#co-liste").addEventListener("click", (e) => {
+  const el = e.target.closest(".contrib"), c = el && coItems.get(el.dataset.id);
+  if (!c) return;
+  const ecouter = e.target.closest(".co-ecouter");
+  if (ecouter) { coEcouter(el, c, ecouter); return; }
+  const form = el.querySelector(".co-form");
+  const b = e.target.closest("[data-avis]");
+  if (b && b.dataset.avis === "juste") { coDonnerAvis(el, c, true); return; }
+  if (b && b.dataset.avis === "faux") { coDonnerAvis(el, c, false); return; }
+  if (b && b.dataset.avis === "corriger") {
+    if (!form.hidden) { form.hidden = true; return; }
+    const t = texteRetenu(c.fiche, c.vals);
+    form.hidden = false;
+    form.innerHTML = `
+      <label>Ce qui est dit en bambara</label>
+      <textarea class="cf-bm" lang="bm" maxlength="1000" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">${esc(t.bm)}</textarea>
+      ${htmlLettres()}
+      <label>La bonne traduction en français</label>
+      <textarea class="cf-fr" maxlength="1000">${esc(t.fr)}</textarea>
+      <div class="rangee"><button type="button" class="secondaire petit cf-annuler">Annuler</button><button type="button" class="principal petit cf-ok" style="margin-top:0">Enregistrer</button></div>`;
+    return;
+  }
+  if (e.target.closest(".cf-annuler")) { form.hidden = true; return; }
+  if (e.target.closest(".cf-ok")) {
+    const t = texteRetenu(c.fiche, c.vals);
+    const bm = nfc(form.querySelector(".cf-bm").value), fr = nfc(form.querySelector(".cf-fr").value);
+    const corr = {};
+    if (bm && bm !== nfc(t.bm)) corr.bm_corrige = bm;
+    if (fr && fr !== nfc(t.fr)) corr.fr_corrige = fr;
+    if (!bm || !fr) { el.querySelector(".co-msg").innerHTML = '<div class="msg err">Remplis les deux cases.</div>'; return; }
+    if (!corr.bm_corrige && !corr.fr_corrige) {
+      el.querySelector(".co-msg").innerHTML = '<div class="msg err">Rien n\'a changé. Si c\'est bon, touche « Juste ».</div>'; return;
+    }
+    coDonnerAvis(el, c, true, corr);
+  }
+});
+$("#co-rafraichir").addEventListener("click", chargerContributions);
+
+/* --- ouverture / sortie de l'onglet, démarrage --- */
+function ouvrirCollecte() { majAttente(); viderFile(); chargerContributions(); }
+function quitterCollecte() { coArreter(); coLibererListe(); }
+function initCollecte() {
+  const p = lireLocal("bf_co_profil", {}) || {};
+  $("#co-pseudo").value = p.pseudo || ""; $("#co-region").value = p.region || "";
+  $("#co-accord").checked = !!coAccord(p.pseudo);
+  $("#co-accord").addEventListener("change", (e) => {
+    const qui = pseudoFichier(coProfil().pseudo);
+    if (e.target.checked && !qui) {
+      coRetirerAccord(); message("#co-retour", "Écris d'abord ton pseudo, puis coche la case.", "err"); return;
+    }
+    ecrireLocal("bf_co_accord", e.target.checked ? { version: CO_ACCORD_VERSION, accepte_le: new Date().toISOString(), pseudo: qui } : null);
+  });
+  ["#co-pseudo", "#co-region"].forEach((s) => $(s).addEventListener("input", coSauverProfil));
+  $("#co-pseudo").addEventListener("input", () => {
+    // téléphone partagé : un autre pseudo doit donner son propre accord
+    if ($("#co-accord").checked && !coAccord($("#co-pseudo").value)) {
+      coRetirerAccord(); message("#co-retour", "Nouveau pseudo : coche de nouveau la case d'accord.", "info");
+    }
+    document.querySelectorAll("#co-liste .contrib").forEach((el) => { const c = coItems.get(el.dataset.id); if (c) coMajPseudo(el, c); });
+  });
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
+    $("#co-zone-micro").hidden = true;
+    coSansMicro("");
+  }
+  window.addEventListener("online", () => viderFile());
+  // iPhone : une appli d'écran d'accueil est le plus souvent reprise, pas rechargée
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") viderFile(); });
+  window.addEventListener("pageshow", (e) => { if (e.persisted) viderFile(); });
+  viderFile();
+}
+
 /* ---------- REGLAGES ---------- */
 function remplirReglages() {
   $("#c-token").value = cfg.token; $("#c-owner").value = cfg.owner; $("#c-repo").value = cfg.repo;
@@ -706,13 +1488,17 @@ $("#c-sauver").addEventListener("click", async () => {
   if (!pret()) { message("#c-retour", "Remplis les trois champs.", "err"); return; }
   try {
     const d = await (await gh(`/repos/${cfg.owner}/${cfg.repo}`)).json();
-    message("#c-retour", `Connecté à <b>${esc(d.full_name)}</b> ${d.private ? "(privé ✓)" : "⚠️ ce dépôt est public : passe-le en privé"}`, d.private ? "ok" : "err");
+    noterDepot(cfg, d);
+    message("#c-retour", `Connecté à <b>${esc(d.full_name)}</b> ${d.private === true ? "(privé ✓)"
+      : "⚠️ ce dépôt est public : passe-le en privé. Les voix de l'onglet Apprendre ne partiront pas vers lui."}`, d.private === true ? "ok" : "err");
+    if (d.private === true) viderFile();
   } catch (e) {
     message("#c-retour", e.status === 404 ? "Dépôt introuvable : vérifie le nom, et que le jeton a accès à ce dépôt." : esc(e.message), "err");
   }
 });
 
 remplirReglages();
+initCollecte();
 if (!pret()) montrer("reglages");
 </script>
 </body>
